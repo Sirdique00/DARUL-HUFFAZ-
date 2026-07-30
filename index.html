@@ -1,1 +1,1711 @@
+<!DOCTYPE html>
+<html lang="ha">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARUL HUFFAZ ONLINE ACADEMY</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #064e3b;
+            --secondary: #047857;
+            --accent: #f59e0b;
+            --accent-gold: #fbbf24;
+            --dark: #0f172a;
+            --light-bg: #f8fafc;
+            --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            --islamic-gradient: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+            --sidebar-width: 280px;
+        }
+
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.98) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes colorShift {
+            0% { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+            33% { color: #10b981; text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+            66% { color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+            100% { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: var(--dark);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page { display: none; }
+        .active-page { display: block; animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .auth-container {
+            max-width: 600px;
+            margin: 35px auto;
+            background: #ffffff;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(4, 47, 46, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            position: relative;
+            z-index: 5;
+        }
+
+        #welcomePage {
+            max-width: 100% !important;
+            min-height: 100vh;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #0f172a 100%) !important;
+            border: none !important;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 40px 20px !important;
+        }
+
+        #welcomePage.active-page {
+            display: flex !important;
+        }
+
+        h1, h2, h3 { text-align: center; color: var(--primary); }
+
+        .arabic-school-title {
+            font-family: 'Traditional Arabic', 'Amiri', serif, sans-serif;
+            font-size: 20px;
+            color: var(--accent);
+            text-align: center;
+            direction: rtl;
+            font-weight: bold;
+        }
+
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 18px; }
+
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 13.5px; }
+
+        input, select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background: #f8fafc;
+            transition: all 0.25s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+        }
+
+        .dare-fixed-box {
+            background: #f0fdf4;
+            border: 2px solid var(--secondary);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 16px;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        button {
+            background: var(--gold-gradient);
+            color: #ffffff;
+            border: none;
+            padding: 14px 22px;
+            width: 100%;
+            border-radius: 10px;
+            font-size: 15.5px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: 10px;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
+        }
+        button:hover { opacity: 0.95; transform: translateY(-2px); }
+
+        .whatsapp-btn {
+            background: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+            animation: pulseGlow 2.5s infinite;
+        }
+        .whatsapp-btn:hover { background: #059669; }
+
+        .group-join-box {
+            margin-top: 20px;
+            text-align: center;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .group-join-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .join-group-btn {
+            background: #25D366;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+            transition: all 0.25s ease;
+            animation: pulseGlow 2s infinite;
+        }
+        .join-group-btn:hover { background: #1eb856; transform: translateY(-2px); }
+
+        #successPage { max-width: 540px; margin: 10px auto; position: relative; }
+
+        .official-certificate-card {
+            background: #fdfbf7;
+            border: 3px solid var(--primary);
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 20px 40px rgba(4, 47, 46, 0.15);
+            aspect-ratio: 2 / 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            box-sizing: border-box;
+            color: #111;
+        }
+
+        .cert-outer-border {
+            border: 2px solid var(--accent);
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.94);
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .cert-header {
+            display: grid;
+            grid-template-columns: 62px 1fr 62px;
+            align-items: center;
+            border-bottom: 2.5px solid var(--primary);
+            padding-bottom: 8px;
+            margin-bottom: 6px;
+            gap: 8px;
+        }
+
+        .cert-badge-box, .cert-passport-box {
+            width: 62px;
+            height: 76px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #64748b;
+            text-align: center;
+        }
+        .cert-badge-box img, .cert-passport-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .cert-title-area h2 { margin: 0; font-size: 11.5px; color: var(--primary); text-transform: uppercase; font-weight: 800; }
+        .cert-title-area h3 { margin: 0; font-size: 9.5px; color: #475569; text-transform: uppercase; }
+
+        .cert-grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 6px; align-items: center; }
+        .cert-field-group label { font-size: 9px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; }
+        .cert-field-value {
+            border-bottom: 1.5px dashed var(--primary);
+            padding: 3px 6px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #0f172a;
+            min-height: 18px;
+            background: rgba(248, 250, 252, 0.9);
+            border-radius: 4px;
+        }
+
+        .cert-rules-box { border: 1.5px solid var(--primary); border-radius: 6px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.92); overflow: hidden; }
+        .cert-rules-title { background: var(--primary); color: var(--accent); text-align: center; font-size: 9px; font-weight: bold; padding: 4px; text-transform: uppercase; }
+        .cert-rules-content { padding: 5px 8px; font-size: 9px; color: #334155; line-height: 1.25; }
+
+        .cert-signatures-area { display: grid; grid-template-columns: 1.2fr 0.8fr 1.2fr; gap: 8px; margin-top: 4px; align-items: center; }
+        .cert-sig-title { font-size: 8.5px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; }
+        .cert-sig-line { border-bottom: 1.5px dashed var(--primary); height: 18px; font-size: 11px; color: #1e3a8a; display: flex; align-items: center; justify-content: center; }
+        .cert-date-line { font-size: 8px; margin-top: 2px; color: #64748b; }
+
+        .cert-stamp {
+            width: 42px; height: 42px; border: 1.5px dashed #1e3a8a; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #1e3a8a; font-size: 6.5px; font-weight: bold; transform: rotate(-10deg); background: rgba(30, 58, 138, 0.04);
+        }
+        .cert-footer-motto { text-align: center; font-size: 9px; font-weight: bold; color: var(--primary); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+
+        #adminDashboard { display: none; min-height: 100vh; background: #f1f5f9; }
+        #adminDashboard.active-page { display: flex; }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            position: fixed;
+            height: 100%;
+            overflow-y: auto;
+            left: calc(var(--sidebar-width) * -1);
+            top: 0;
+            z-index: 100;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+            transition: left 0.3s ease;
+        }
+        .sidebar.sidebar-open { left: 0; }
+        .sidebar-header { padding: 22px 20px; font-size: 17px; font-weight: bold; background: #02201f; text-align: center; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar-menu li { padding: 14px 20px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); font-weight: 500; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; font-size: 14px; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: var(--secondary); border-left: 5px solid var(--accent); color: var(--accent); padding-left: 25px; }
+
+        .main-content { margin-left: 0; flex: 1; padding: 35px; box-sizing: border-box; transition: margin-left 0.3s ease; width: 100%; }
+
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 18px 30px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 30px; border: 1px solid #e2e8f0; }
+        .dash-section { display: none; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+        .dash-section.active-tab { display: block; animation: fadeInScale 0.3s ease forwards; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #fff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; border-top: 4px solid var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .stat-card .stat-value { font-size: 20px; font-weight: bold; color: var(--primary); margin-top: 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #f1f5f9; }
+        th { background-color: var(--primary); color: var(--accent); font-weight: 600; }
+        tr:hover td { background-color: #f8fafc; cursor: pointer; }
+
+        .balloons-container, .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 1; }
+        .balloon { position: absolute; bottom: -100px; width: 32px; height: 42px; border-radius: 50%; }
+        .confetti { position: absolute; top: -20px; width: 8px; height: 12px; }
+
+        .notice-bell-wrapper { position: relative; cursor: pointer; display: inline-block; }
+        .notice-badge { position: absolute; top: -5px; right: -8px; background: #ef4444; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 2px solid white; display: inline-block; }
+        .notice-dropdown { position: absolute; right: 0; top: 50px; width: 380px; background: white; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.12); border: 1px solid #e2e8f0; display: none; z-index: 1000; overflow: hidden; }
+        .notice-dropdown.show { display: block; animation: fadeInScale 0.2s ease forwards; }
+        .notice-header { padding: 14px 18px; background: var(--primary); color: var(--accent); font-weight: bold; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; }
+        .notice-body { max-height: 340px; overflow-y: auto; }
+        .notice-item { padding: 12px 18px; border-bottom: 1px solid #f1f5f9; font-size: 13px; background: #fff; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer; }
+        .notice-item:hover { background: #f8fafc; }
+        .notice-item.unread { background: #fdf8f0; border-left: 4px solid var(--accent); }
+        .notice-actions { display: flex; gap: 6px; align-items: center; }
+        .notice-btn { padding: 5px 10px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; width: auto; margin: 0; box-shadow: none; color: white; }
+
+        .promo-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid var(--accent);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            position: relative;
+        }
+        .promo-info h4 { margin: 0 0 5px 0; color: var(--primary); font-size: 15px; }
+        .promo-info p { margin: 0; font-size: 12.5px; color: #64748b; }
+
+        #cameraModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: none;
+            justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;
+        }
+        .camera-box {
+            background: #1e293b; border-radius: 16px; padding: 20px; max-width: 450px; width: 100%;
+            display: flex; flex-direction: column; align-items: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .camera-box video {
+            width: 100%; height: 320px; object-fit: cover; border-radius: 12px; background: #000;
+        }
+        .camera-controls {
+            display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center;
+        }
+
+        .creator-tag {
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            animation: colorShift 3s infinite ease-in-out;
+            margin-top: 35px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .main-content { padding: 15px; }
+            .form-grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 1. WELCOME PAGE -->
+<div id="welcomePage" class="page active-page">
+    <div class="arabic-school-title" id="arabicTitleTrigger" style="font-size: 32px; margin-bottom: 15px; cursor: pointer; color: var(--accent-gold);" title="Ka danna sau 5 domin shiga admin">مدرسة دار الحفاظ أونلاين أكاديمي</div>
+    <div style="margin: 30px 0; line-height: 1.6; text-align: center;">
+        <h1 style="font-size: 38px; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: 2px;">WELCOME TO</h1>
+        <h2 style="font-size: 26px; font-weight: 800; color: var(--accent-gold); margin: 15px 0;">DARUL HUFFAZ ONLINE ACADEMY</h2>
+        <div style="font-size: 16px; font-weight: 800; color: #ffffff; margin-top: 20px; background: rgba(16, 185, 129, 0.2); display: inline-block; padding: 10px 24px; border-radius: 30px; border: 2px solid var(--accent-gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">ONLINE REGISTRATION PORTAL</div>
+    </div>
+    <button type="button" onclick="showPage('rulesPage')" style="font-size: 20px; padding: 18px 45px; border-radius: 15px; max-width: 320px; font-weight: 800; box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);">Register Now ➔</button>
+
+    <div class="creator-tag">@Sirdique2026</div>
+</div>
+
+<!-- 2. RULES PAGE -->
+<div id="rulesPage" class="page auth-container">
+    <h2>OUR RULES & REGULATIONS</h2>
+    <div style="background: #fdfbf7; padding: 20px; max-height: 230px; overflow-y: auto; border-left: 5px solid var(--accent); border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; border: 1px solid #e2e8f0;">
+        <ul style="padding-left: 15px; margin: 0;">
+            <li>Fear Allah in all your actions.</li>
+            <li>Be punctual and attend all classes regularly.</li>
+            <li>Respect your teachers, parents, and fellow students.</li>
+            <li>Wear the prescribed school uniform neatly and modestly.</li>
+            <li>Maintain personal hygiene and keep the school environment clean.</li>
+            <li>Speak politely and avoid fighting or abusive language.</li>
+            <li>Take good care of all school property and facilities.</li>
+            <li>Perform your daily prayers and participate actively in Qur'an lessons.</li>
+            <li>Complete all assignments and come prepared for every class.</li>
+            <li>Be honest, trustworthy, and avoid all forms of cheating.</li>
+        </ul>
+    </div>
+    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600;">
+        <input type="checkbox" id="agreeCheck" style="width: 22px; height: 22px; accent-color: var(--primary); border-radius: 6px;"> Na karanta kuma na amince da dokokin makarantar
+    </label>
+    <button type="button" id="rulesNextBtn" style="display: none;" onclick="showPage('registerPage')">Ci Gaba (Next) ➔</button>
+    <button type="button" onclick="showPage('welcomePage')" style="background: #64748b; color: white; box-shadow: none; margin-top: 10px;">← Baya</button>
+</div>
+
+<!-- 3. REGISTRATION FORM PAGE -->
+<div id="registerPage" class="page auth-container" style="max-width: 620px;">
+    <h2>DARUL HUFFAZ ONLINE ACADEMY</h2>
+    <p style="text-align: center; margin: 0 0 20px 0; font-size: 13px; color: #64748b; font-weight: 600;">Online Registration Portal - Fom din Rajista</p>
+
+    <form id="regForm">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fdfbf7; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); margin-bottom: 20px;">
+            <div style="width: 90px; height: 110px; border: 2px dashed var(--accent); border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;" id="passportPreviewContainer">
+                <img id="passportPreviewImg" src="young.jpg" alt="young.jpg" style="width: 100%; height: 100%; object-fit: contain; background: #f8fafc;" onerror="this.src='young.jpg';">
+            </div>
+            
+            <div style="flex: 1; padding-left: 12px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="arabic-school-title" style="font-size: 15px; text-align: right;">مدرسة دار الحفاظ أونلاين أكاديمي</div>
+                <div style="font-size: 11px; color: #d97706; text-align: right; font-weight: bold; margin-top: 4px;">Online Learning Portal</div>
+                <button type="button" id="openSourceSelectBtn" style="margin-top: 8px; padding: 8px 12px; font-size: 12px; background: var(--secondary); color: white; box-shadow: none;">📷 Zabi Hoto (Camera/Gallery)</button>
+                <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+            </div>
+        </div>
+
+        <div class="form-grid-2">
+            <div class="form-group"><label>Sunan Dalibi *</label><input type="text" id="firstName" required placeholder="Misali: Abubakar"></div>
+            <div class="form-group"><label>Sunan Mahaifi *</label><input type="text" id="lastName" required placeholder="Misali: Abdullahi"></div>
+        </div>
+
+        <div class="form-grid-2">
+            <div class="form-group"><label>Shekaru (Age) *</label><input type="number" id="age" required placeholder="Misali: 15"></div>
+            <div class="form-group">
+                <label>Phone Number * (Dole ya zama lamba 11)</label>
+                <input type="text" id="phone" required inputmode="numeric" pattern="[0-9]*" maxlength="11" placeholder="08012345678">
+                <small id="phoneErrorMsg" style="color: #ef4444; font-size: 11px; display: none; margin-top: 2px;">Lamba dole ta kai kowa 11 kuma ta zama lamba kawai!</small>
+            </div>
+        </div>
+
+        <div class="form-grid-2">
+            <div class="form-group"><label>Email Address (Optional)</label><input type="email" id="email" placeholder="example@email.com"></div>
+            <div class="form-group">
+                <label>Gender *</label>
+                <select id="gender" required>
+                    <option value="">Zabi Gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group"><label>Address *</label><input type="text" id="address" required placeholder="Misali: Kano, Nigeria"></div>
+        
+        <div class="form-group">
+            <label>Tsarin Karatu / Tsari</label>
+            <div class="dare-fixed-box">🌐 ONLINE (Trained & Assigned by Code)</div>
+        </div>
+        
+        <button type="submit" id="submitRegBtn">Yi Register ➔</button>
+    </form>
+    <button type="button" onclick="showPage('rulesPage')" style="background: #64748b; color: white; box-shadow: none; margin-top: 10px;">← Baya</button>
+</div>
+
+<!-- 4. CONFIRMATION CODE INPUT PAGE -->
+<div id="codePage" class="page auth-container">
+    <h2>Confirmation Code Verification</h2>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px; text-align: center; line-height: 1.5;">Tura kuɗin rajista ga Admin ta WhatsApp domain samun lambar tabbatarwa (Confirmation Code).</p>
+    
+    <a id="whatsappLinkBtn" href="https://wa.me/2347056845435?text=Assalamu%20Alaikum%20Admin,%20Ina%20son%20samun%20Confirmation%20Code." target="_blank" class="whatsapp-btn">
+        💬 Tuntuɓi Admin a WhatsApp (0705 684 5435)
+    </a>
+
+    <div class="form-group" style="margin-top: 25px;">
+        <label>Sanya Code *</label>
+        <input type="text" id="confCodeInput" placeholder="Misali: bgr_xyz89, itm_abc12, ko adv_qw12" style="text-align: center; font-family: monospace; font-size: 16px; letter-spacing: 1px;">
+    </div>
+    <button type="button" id="finalizeRegBtn">Kammala Rajista ✨</button>
+    <button type="button" onclick="showPage('registerPage')" style="background: #64748b; color: white; box-shadow: none; margin-top: 10px;">← Baya</button>
+</div>
+
+<!-- 5. SUCCESS FULL CERTIFICATE/FORM PAGE -->
+<div id="successPage" class="page" style="position: relative; z-index: 5;">
+    <div class="balloons-container" id="balloonsContainer"></div>
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <div class="official-certificate-card" id="printableFormCard">
+        <div class="cert-outer-border">
+            <div class="cert-header">
+                <div class="cert-badge-box" id="formCardBadgeBox"><img src="young.jpg" alt="young.jpg" style="width:100%;height:100%;object-fit:contain;" onerror="this.src='young.jpg';"></div>
+                <div class="cert-title-area" style="text-align: center;">
+                    <h2>DARUL HUFFAZ ONLINE ACADEMY</h2>
+                    <div class="arabic-school-title" style="font-size: 12px; margin: 2px 0;">مدرسة دار الحفاظ أونلاين أكاديمي</div>
+                    <h3>ONLINE LEARNING PORTAL</h3>
+                </div>
+                <div class="cert-passport-box" id="formCardPassportBox">PHOTO</div>
+            </div>
+
+            <div class="cert-grid-row">
+                <div class="cert-field-group"><label>Sunan Dalibi:</label><div class="cert-field-value" id="formCardFirstName"></div></div>
+                <div class="cert-field-group"><label>Sunan Mahaifi:</label><div class="cert-field-value" id="formCardLastName"></div></div>
+            </div>
+
+            <div class="cert-grid-row">
+                <div class="cert-field-group"><label>Student ID:</label><div class="cert-field-value" id="formCardUserId" style="color: var(--primary); font-weight: bold;"></div></div>
+                <div class="cert-field-group"><label>Phone Number:</label><div class="cert-field-value" id="formCardPhone"></div></div>
+            </div>
+
+            <div class="cert-grid-row">
+                <div class="cert-field-group"><label>SECTION:</label><div class="cert-field-value" id="formCardSection" style="color: var(--primary); font-weight: bold;">ONLINE</div></div>
+                <div class="cert-field-group"><label>EMAIL ADDRESS:</label><div class="cert-field-value" id="formCardEmail" style="height: 25px; overflow: hidden; font-size: 10.5px;"></div></div>
+            </div>
+
+            <div class="cert-grid-row" style="margin-bottom: 2px;">
+                <div class="cert-field-group" style="margin-bottom: 0; grid-column: span 2;"><label>Address:</label><div class="cert-field-value" id="formCardAddress" style="height: 25px; overflow: hidden;"></div></div>
+            </div>
+
+            <div class="cert-rules-box">
+                <div class="cert-rules-title">Sashen Cike Dokar Makaranta</div>
+                <div class="cert-rules-content">
+                    <div>☑ Na karanta kuma na fahimci dokokin makaranta.</div>
+                    <div>☑ Na amince da bin dokokin makaranta.</div>
+                    <div>☑ Na amince da hukuncin karya doka.</div>
+                </div>
+            </div>
+
+            <div class="cert-signatures-area">
+                <div class="cert-sig-box"><div class="cert-sig-title">Student Sign</div><div class="cert-sig-line" id="studentSigLine">Sign</div><div class="cert-date-line">DATE: <span id="formCardDate1">--/--/--</span></div></div>
+                <div class="cert-stamp-container"><div class="cert-stamp"><span>Darul</span><span>Official</span><span>Stamp</span></div></div>
+                <div class="cert-sig-box"><div class="cert-sig-title">Management Sign</div><div class="cert-sig-line">Academy Admin</div><div class="cert-date-line">DATE: <span id="formCardDate2">--/--/--</span></div></div>
+            </div>
+
+            <div class="cert-footer-motto">ILMI &bull; IMANI &bull; IHSANI</div>
+        </div>
+    </div>
+
+    <!-- WHATSAPP GROUP JOIN BOX -->
+    <div class="group-join-box" style="max-width: 540px; margin: 15px auto 0 auto; position: relative; z-index: 10;">
+        <div class="group-join-title">JOIN OUR GROUP NOW</div>
+        <a href="https://chat.whatsapp.com/KO8DQRLmCpcGEz5hdtk8ix?s=cl&p=a&ilr=0&amv=0" target="_blank" class="join-group-btn">
+            💬 SHIGA GROUP DIN WHATSAPP
+        </a>
+    </div>
+
+    <div style="max-width: 540px; margin: 15px auto 0 auto; display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 10;">
+        <button type="button" id="downloadFormBtn" style="background: #0284c7; color:white; flex: 1; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);">📥 Save Form a Waya (Download)</button>
+        <a id="whatsappSendBtn" href="#" target="_blank" class="whatsapp-btn" style="flex: 1; margin: 0; text-decoration: none;">💬 Turawa Admin WhatsApp</a>
+    </div>
+    <div style="text-align: center; margin-top: 12px; position: relative; z-index: 10;">
+        <button type="button" onclick="showPage('welcomePage')" style="background: #64748b; color: white; width: auto; padding: 10px 25px; box-shadow: none;">Kammala / Komawa Gida</button>
+    </div>
+</div>
+
+<!-- 6. ADMIN PIN & LOGIN PAGES -->
+<div id="pinPage" class="page auth-container">
+    <h2>Admin Security PIN</h2>
+    <div class="form-group"><label>Sanya 6-Digit PIN *</label><input type="password" id="adminPin" maxlength="6" placeholder="******" style="text-align: center; font-size: 18px; letter-spacing: 3px;"></div>
+    <button type="button" id="verifyPinBtn">Shiga ➔</button>
+    <button type="button" onclick="handlePinBack()" style="background: #64748b; color: white; box-shadow: none; margin-top: 10px;">Soke</button>
+</div>
+
+<div id="loginPage" class="page auth-container">
+    <h2>Admin Login</h2>
+    <div class="form-group"><label>Username *</label><input type="text" id="adminUser" placeholder="Username"></div>
+    <div class="form-group"><label>Password *</label><input type="password" id="adminPass" placeholder="Password"></div>
+    <button type="button" id="verifyLoginBtn">Login ➔</button>
+    <button type="button" onclick="handleLoginBack()" style="background: #64748b; color: white; box-shadow: none; margin-top: 10px;">Soke</button>
+</div>
+
+<!-- 7. FULL ADMIN DASHBOARD -->
+<div id="adminDashboard" class="page">
+    <div class="sidebar" id="appSidebar">
+        <div class="sidebar-header">✨ Darul Huffaz Admin</div>
+        <ul class="sidebar-menu">
+            <li data-tab="tabOverview" class="active"><span>📊 Overview & Revenue</span></li>
+            <li data-tab="tabMonthly"><span>📅 Money History</span></li>
+            <li data-tab="tabCodes"><span>🔑 Confirmation Codes</span></li>
+            <li data-tab="tabPromoDemo"><span>🚀 Promo & Demo</span></li>
+            <li data-tab="tabAllStudents"><span>👥 All Students</span><span id="badgeAllStudents" style="background:var(--accent); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:10px; font-weight:bold;">0</span></li>
+            <li data-tab="tabBeginner"><span>📘 Beginner</span><span id="badgeBeginner" style="background:var(--accent); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:10px; font-weight:bold;">0</span></li>
+            <li data-tab="tabIntermediate"><span>📗 Intermediate</span><span id="badgeIntermediate" style="background:var(--accent); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:10px; font-weight:bold;">0</span></li>
+            <li data-tab="tabAdvance"><span>📙 Advance</span><span id="badgeAdvance" style="background:var(--accent); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:10px; font-weight:bold;">0</span></li>
+            <li data-tab="tabForms"><span>📄 Forms</span></li>
+            <li id="logoutBtn" style="color: #fca5a5; margin-top: 20px;"><span>🚪 Logout</span><span></span></li>
+        </ul>
+    </div>
+
+    <div class="main-content" id="mainContentArea">
+        <div class="top-navbar">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button type="button" id="toggleSidebarBtn" style="background: #f1f5f9; border: 1px solid #cbd5e1; width:42px; height:42px; border-radius:10px; cursor:pointer; position:relative; z-index:10; margin:0; font-size: 16px;">☰</button>
+                <h3 style="margin: 0; color: var(--primary);">Dashboard Panel</h3>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="notice-bell-wrapper" id="noticeBellWrapper">
+                    <span style="font-size: 24px;">🔔</span>
+                    <span class="notice-badge" id="noticeBadgeCount">0</span>
+                    <div class="notice-dropdown" id="noticeDropdown" onclick="event.stopPropagation()">
+                        <div class="notice-header">
+                            <span>Sanarwar Rajista (Notifications)</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button type="button" class="notice-btn" style="background:#0284c7;" id="markAllNoticesBtn">Mark All</button>
+                                <button type="button" class="notice-btn" style="background:#ef4444;" id="delAllNoticesBtn">Delete</button>
+                            </div>
+                        </div>
+                        <div class="notice-body" id="noticeListContainer"></div>
+                    </div>
+                </div>
+                <span id="adminWelcomeUser" style="font-weight: bold; color: var(--primary);"></span>
+            </div>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="tabOverview" class="dash-section active-tab">
+            <h2>Financial & Revenue Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><h4>Jimillar Dalibai</h4><div class="stat-value" id="statTotalStudents">0</div></div>
+                <div class="stat-card"><h4>Jimillar Kuɗi (All Revenue)</h4><div class="stat-value" id="statTotalRevenue">₦0</div></div>
+            </div>
+            <h2>Search System</h2>
+            <input type="text" id="liveSearchInput" placeholder="Search da Student ID ko Suna...">
+            <div id="searchDashboardResult" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- MONTHLY REVENUE HISTORY TAB -->
+        <div id="tabMonthly" class="dash-section">
+            <h2>Lissafin Kuɗi na Wata-Wata (Money History Archives)</h2>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Wannan sashen yana lissafin kudaden watan da ake ciki ta atomatik, kuma yana lissafin kwanakin wata (28, 29, 30, 31) tare da adana na shekara idan ta cika.</p>
+            
+            <div style="background: #f8fafc; border: 2px solid var(--accent); border-radius: 14px; padding: 20px; margin-bottom: 25px;">
+                <h3 style="margin-top:0; color:var(--primary);" id="currentMonthTitleHeading">Watan da ake ciki: --</h3>
+                <div class="stats-grid" style="margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                    <div class="stat-card"><h4>Beginner</h4><div class="stat-value" id="curBeginnerRev">₦0</div></div>
+                    <div class="stat-card"><h4>Intermediate</h4><div class="stat-value" id="curIntermediateRev">₦0</div></div>
+                    <div class="stat-card"><h4>Advance</h4><div class="stat-value" id="curAdvanceRev">₦0</div></div>
+                    <div class="stat-card" style="border-top-color: var(--primary);"><h4>All</h4><div class="stat-value" id="curAllRev">₦0</div></div>
+                </div>
+            </div>
+
+            <h3>Adana Tsofaffin Watanni da Shekaru (Saved Archives)</h3>
+            <div id="monthlyArchivesListContainer"></div>
+        </div>
+
+        <!-- CODES TAB -->
+        <div id="tabCodes" class="dash-section">
+            <h2>Sarrafa Confirmation Codes</h2>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Kowanne aji yana da nasa engine mai zaman kansa (generate zai bayar da guda 20 lokaci guda).</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px;">
+                
+                <!-- Beginner Engine -->
+                <div style="background: #fdfbf7; border: 2px solid #d97706; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="color: #b45309; margin: 0; font-size: 15px;">📘 Beginner (bgr_...)</h3>
+                            <span id="countBadgeBeginner" style="background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">0 codes</span>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto;" id="listEngineBeginner"></div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 6px;">
+                        <button type="button" onclick="generateCodesForClass('Beginner')" style="background: #d97706; color:white; margin:0; padding:10px;">⚡ Generate (20)</button>
+                        <button type="button" onclick="copyAllCodes('Beginner')" style="background: #0284c7; color:white; margin:0; padding:10px;">📋 Copy All</button>
+                        <button type="button" onclick="deleteAllCodes('Beginner')" style="background: #ef4444; color:white; margin:0; padding:10px;">🗑️ Delete All</button>
+                    </div>
+                </div>
+
+                <!-- Intermediate Engine -->
+                <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="color: #047857; margin: 0; font-size: 15px;">📗 Intermediate (itm_...)</h3>
+                            <span id="countBadgeIntermediate" style="background: #d1fae5; color: #047857; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">0 codes</span>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto;" id="listEngineIntermediate"></div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 6px;">
+                        <button type="button" onclick="generateCodesForClass('Intermediate')" style="background: #059669; color:white; margin:0; padding:10px;">⚡ Generate (20)</button>
+                        <button type="button" onclick="copyAllCodes('Intermediate')" style="background: #0284c7; color:white; margin:0; padding:10px;">📋 Copy All</button>
+                        <button type="button" onclick="deleteAllCodes('Intermediate')" style="background: #ef4444; color:white; margin:0; padding:10px;">🗑️ Delete All</button>
+                    </div>
+                </div>
+
+                <!-- Advance Engine -->
+                <div style="background: #fdf2f8; border: 2px solid #db2777; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="color: #be185d; margin: 0; font-size: 15px;">📙 Advance (adv_...)</h3>
+                            <span id="countBadgeAdvance" style="background: #fce7f3; color: #be185d; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">0 codes</span>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto;" id="listEngineAdvance"></div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 6px;">
+                        <button type="button" onclick="generateCodesForClass('Advance')" style="background: #db2777; color:white; margin:0; padding:10px;">⚡ Generate (20)</button>
+                        <button type="button" onclick="copyAllCodes('Advance')" style="background: #0284c7; color:white; margin:0; padding:10px;">📋 Copy All</button>
+                        <button type="button" onclick="deleteAllCodes('Advance')" style="background: #ef4444; color:white; margin:0; padding:10px;">🗑️ Delete All</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PROMO & DEMO TAB -->
+        <div id="tabPromoDemo" class="dash-section">
+            <h2>🚀 Promo & Demo (Sarrafa Ajin Ɗalibi)</h2>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Anan zaka iya promote din dalibi zuwa ajin gaba ko demote dinsa zuwa ajin baya nan take.</p>
+            <div style="margin-bottom: 15px;"><input type="text" id="promoSearchInput" placeholder="Search da Student ID ko Suna..."></div>
+            <div id="promoDemoContainer"></div>
+        </div>
+
+        <!-- ALL STUDENTS TAB -->
+        <div id="tabAllStudents" class="dash-section">
+            <h2>All Students Management</h2>
+            <div style="margin-bottom: 15px;"><input type="text" id="allStudentSearchInput" placeholder="Search da Student ID ko Suna..."></div>
+            <div id="allStudentTableContainer"></div>
+        </div>
+
+        <!-- INDIVIDUAL CLASS TABS -->
+        <div id="tabBeginner" class="dash-section"><h2>Beginner Class Students Details</h2><div id="classBeginnerTableContainer"></div></div>
+        <div id="tabIntermediate" class="dash-section"><h2>Intermediate Class Students Details</h2><div id="classIntermediateTableContainer"></div></div>
+        <div id="tabAdvance" class="dash-section"><h2>Advance Class Students Details</h2><div id="classAdvanceTableContainer"></div></div>
+
+        <!-- FORMS TAB -->
+        <div id="tabForms" class="dash-section">
+            <h2>Successful Registration Forms</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <button type="button" onclick="filterFormTab('ALL', this)" class="form-filter-btn" style="width: auto; background: var(--primary); color: var(--accent); padding: 8px 16px; margin:0; border-radius: 8px;">All</button>
+                <button type="button" onclick="filterFormTab('Beginner', this)" class="form-filter-btn" style="width: auto; background: #e2e8f0; color: #334155; padding: 8px 16px; margin:0; border-radius: 8px;">Beginner</button>
+                <button type="button" onclick="filterFormTab('Intermediate', this)" class="form-filter-btn" style="width: auto; background: #e2e8f0; color: #334155; padding: 8px 16px; margin:0; border-radius: 8px;">Intermediate</button>
+                <button type="button" onclick="filterFormTab('Advance', this)" class="form-filter-btn" style="width: auto; background: #e2e8f0; color: #334155; padding: 8px 16px; margin:0; border-radius: 8px;">Advance</button>
+            </div>
+            <div style="margin-bottom: 15px;"><input type="text" id="formsSearchInput" placeholder="Search da Student ID ko Suna domin ganin fom..."></div>
+            <div id="formsListContainer"></div>
+        </div>
+    </div>
+</div>
+
+<!-- LIVE CAMERA MODAL -->
+<div id="cameraModal">
+    <div class="camera-box">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 10px;">
+            <h3 style="color: white; margin: 0; font-size: 16px;">📸 Dauki Hoto (Live Camera)</h3>
+            <button type="button" id="switchCameraBtn" style="width: auto; padding: 6px 12px; font-size: 12px; background: var(--accent); color: var(--primary); margin: 0;">🔄 Canza Camera</button>
+        </div>
+        <video id="liveVideoElement" autoplay playsinline></video>
+        <div class="camera-controls">
+            <button type="button" id="captureGoodBtn" style="background: #10b981; color: white; margin: 0;">✅ Good (Yi Upload)</button>
+            <button type="button" id="captureCancelBtn" style="background: #ef4444; color: white; margin: 0;">❌ Cancel (Sake Dauka)</button>
+        </div>
+    </div>
+</div>
+
+<!-- SOURCE SELECT CHOICE MODAL -->
+<div id="sourceSelectModal" class="page" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1500; display:none; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#fff; border-radius:16px; padding:25px; max-width:350px; width:100%; text-align:center; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:var(--primary);">Zabi Hanyar Daukar Hoto</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Kuna son daukar hoto kai tsaye ta Camera ne ko kuma daga Gallery?</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button type="button" id="choiceCameraBtn" style="background: var(--secondary); color: white; margin: 0;">📷 Camera</button>
+            <button type="button" id="choiceGalleryBtn" style="background: var(--primary); color: var(--accent); margin: 0;">🖼️ Gallery</button>
+            <button type="button" id="choiceCancelBtn" style="background: #64748b; color: white; margin: 0;">❌ Soke</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FOR SHORT DETAILS / DELETE / CLOSE -->
+<div id="studentModal" class="page" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; display:none; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#fff; border-radius:16px; padding:30px; max-width:420px; width:100%; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 12px;">Takaitaccen Bayanin Dalibi (Short Details)</h3>
+        <div style="margin: 20px 0; font-size: 14.5px; line-height: 2;">
+            <div><strong>Student ID:</strong> <span id="modalStudentId" style="color:var(--primary); font-weight:bold;"></span></div>
+            <div><strong>Name:</strong> <span id="modalStudentName"></span></div>
+            <div><strong>Class:</strong> <span id="modalStudentClass" style="color:#d97706; font-weight:bold;"></span></div>
+            <div><strong>Gender:</strong> <span id="modalStudentGender" style="color:#0284c7; font-weight:bold;"></span></div>
+            <div><strong>Email:</strong> <span id="modalStudentEmail"></span></div>
+            <div><strong>Used Code:</strong> <span id="modalStudentCode" style="font-family:monospace; color:#047857; font-weight:bold;"></span></div>
+            <div><strong>Phone Number:</strong> <span id="modalStudentPhone"></span></div>
+            <div><strong>Address:</strong> <span id="modalStudentAddress"></span></div>
+            <div><strong>Time of Register:</strong> <span id="modalStudentTime"></span></div>
+            <div><strong>Date:</strong> <span id="modalStudentDate"></span></div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 25px;">
+            <button type="button" id="deleteStudentBtn" style="background:#ef4444; color:white; box-shadow:none; margin:0; flex:1;">🗑️ Delete</button>
+            <button type="button" id="closeStudentModalBtn" style="background:#64748b; color:white; box-shadow:none; margin:0; flex:1;">❌ Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FOR VIEWING FULL CERTIFICATE/FORM -->
+<div id="formViewModal" class="page" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; display:none; justify-content:center; align-items:center; overflow-y:auto; padding:20px;">
+    <div style="background:#fdfbf7; border-radius:16px; padding:20px; max-width:520px; width:100%; box-shadow: 0 25px 50px rgba(0,0,0,0.35);">
+        <div class="official-certificate-card" id="adminPrintableFormCard" style="margin:0 auto; width:100%;">
+            <div class="cert-outer-border">
+                <div class="cert-header">
+                    <div class="cert-badge-box" id="adminFormBadgeBox"><img src="young.jpg" alt="young.jpg" style="width:100%;height:100%;object-fit:contain;" onerror="this.src='young.jpg';"></div>
+                    <div class="cert-title-area" style="text-align: center;">
+                        <h2>DARUL HUFFAZ ONLINE ACADEMY</h2>
+                        <div class="arabic-school-title" style="font-size: 12px; margin: 2px 0;">مدرسة دار الحفاظ أونلاين أكاديمي</div>
+                        <h3>ONLINE LEARNING PORTAL</h3>
+                    </div>
+                    <div class="cert-passport-box" id="adminFormPassportBox">PHOTO</div>
+                </div>
+                <div class="cert-grid-row">
+                    <div class="cert-field-group"><label>Sunan Dalibi:</label><div class="cert-field-value" id="adminFormFirstName"></div></div>
+                    <div class="cert-field-group"><label>Sunan Mahaifi:</label><div class="cert-field-value" id="adminFormLastName"></div></div>
+                </div>
+                <div class="cert-grid-row">
+                    <div class="cert-field-group"><label>Student ID:</label><div class="cert-field-value" id="adminFormUserId" style="color: var(--primary); font-weight: bold;"></div></div>
+                    <div class="cert-field-group"><label>Phone Number:</label><div class="cert-field-value" id="adminFormPhone"></div></div>
+                </div>
+                <div class="cert-grid-row">
+                    <div class="cert-field-group"><label>SECTION:</label><div class="cert-field-value" id="adminFormSection" style="color: var(--primary); font-weight: bold;">ONLINE</div></div>
+                    <div class="cert-field-group"><label>EMAIL ADDRESS:</label><div class="cert-field-value" id="adminFormEmail" style="height: 25px; overflow: hidden; font-size: 10.5px;"></div></div>
+                </div>
+                <div class="cert-grid-row" style="margin-bottom: 2px;">
+                    <div class="cert-field-group" style="margin-bottom: 0; grid-column: span 2;"><label>Address:</label><div class="cert-field-value" id="adminFormAddress" style="height: 25px; overflow: hidden;"></div></div>
+                </div>
+                <div class="cert-rules-box">
+                    <div class="cert-rules-title">Sashen Cike Dokar Makaranta</div>
+                    <div class="cert-rules-content">
+                        <div>☑ Na karanta kuma na fahimci dokokin makaranta.</div>
+                        <div>☑ Na amince da bin dokokin makaranta.</div>
+                        <div>☑ Na amince da hukuncin karya doka.</div>
+                    </div>
+                </div>
+                <div class="cert-signatures-area">
+                    <div class="cert-sig-box"><div class="cert-sig-title">Student Sign</div><div class="cert-sig-line" id="adminStudentSigLine">Sign</div><div class="cert-date-line">DATE: <span id="adminFormDate1">--/--/--</span></div></div>
+                    <div class="cert-stamp-container"><div class="cert-stamp"><span>Darul</span><span>Official</span><span>Stamp</span></div></div>
+                    <div class="cert-sig-box"><div class="cert-sig-title">Management Sign</div><div class="cert-sig-line" id="adminFormAdmin">Academy Admin</div><div class="cert-date-line">DATE: <span id="adminFormDate2">--/--/--</span></div></div>
+                </div>
+                <div class="cert-footer-motto">ILMI &bull; IMANI &bull; IHSANI</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button type="button" id="downloadAdminFormBtn" style="background:#0284c7; color:white; box-shadow:none; margin:0; flex:1;">📥 Save Fom ɗin</button>
+            <button type="button" id="closeAdminFormModalBtn" style="background:#64748b; color:white; box-shadow:none; margin:0; flex:1;">❌ Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Supabase credentials dinka na gaskiya:
+    const SUPABASE_URL = 'https://aobizjaqoctzbmzmpvrz.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable__XP-1m___1AaPk8gbfCkyA_NA-87Tjw';
+    
+    let supabaseClient = null;
+    if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+        console.warn('Supabase ba a saita shi ba tukuna, yana amfani da LocalStorage backup.');
+    }
+
+    if (!localStorage.getItem('admin_user')) localStorage.setItem('admin_user', 'Sirdique');
+    if (!localStorage.getItem('admin_pass')) localStorage.setItem('admin_pass', '9781place');
+
+    let arabicTapCount = 0, arabicTapTimer = null, tempPassportBase64 = '', currentFormFilter = 'ALL', selectedModalUserId = null;
+    let mediaStream = null, usingFrontCamera = true;
+
+    const phoneInput = document.getElementById('phone');
+    const phoneErrorMsg = document.getElementById('phoneErrorMsg');
+
+    phoneInput.addEventListener('input', function(e) {
+        let cleanVal = this.value.replace(/\D/g, '');
+        if (cleanVal.length > 11) {
+            cleanVal = cleanVal.slice(0, 11);
+        }
+        this.value = cleanVal;
+
+        if (cleanVal.length > 0 && cleanVal.length < 11) {
+            phoneErrorMsg.style.display = 'block';
+            phoneErrorMsg.innerText = `Lambar waya tana buƙatar ta cika 11 (Akwai ${cleanVal.length}/11)`;
+        } else {
+            phoneErrorMsg.style.display = 'none';
+        }
+    });
+
+    document.getElementById('galleryInput').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if(file) {
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                processAndSetImage(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function processAndSetImage(dataUrl) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement('canvas');
+            let maxWidth = 150;
+            let maxHeight = 180;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            tempPassportBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            
+            document.getElementById('passportPreviewImg').src = tempPassportBase64;
+        };
+        img.src = dataUrl;
+    }
+
+    document.getElementById('openSourceSelectBtn').addEventListener('click', function() {
+        document.getElementById('sourceSelectModal').style.display = 'flex';
+    });
+
+    document.getElementById('choiceCancelBtn').addEventListener('click', function() {
+        document.getElementById('sourceSelectModal').style.display = 'none';
+    });
+
+    document.getElementById('choiceGalleryBtn').addEventListener('click', function() {
+        document.getElementById('sourceSelectModal').style.display = 'none';
+        document.getElementById('galleryInput').click();
+    });
+
+    document.getElementById('choiceCameraBtn').addEventListener('click', function() {
+        document.getElementById('sourceSelectModal').style.display = 'none';
+        openLiveCamera();
+    });
+
+    function openLiveCamera() {
+        document.getElementById('cameraModal').style.display = 'flex';
+        startCameraStream();
+    }
+
+    function startCameraStream() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        let constraints = {
+            video: { facingMode: usingFrontCamera ? 'user' : 'environment' },
+            audio: false
+        };
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+                mediaStream = stream;
+                document.getElementById('liveVideoElement').srcObject = stream;
+            })
+            .catch(err => {
+                alert('An samu matsala wajen buɗe camera: ' + err.message);
+                document.getElementById('cameraModal').style.display = 'none';
+            });
+    }
+
+    document.getElementById('switchCameraBtn').addEventListener('click', function() {
+        usingFrontCamera = !usingFrontCamera;
+        startCameraStream();
+    });
+
+    document.getElementById('captureCancelBtn').addEventListener('click', function() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        document.getElementById('cameraModal').style.display = 'none';
+    });
+
+    document.getElementById('captureGoodBtn').addEventListener('click', function() {
+        let video = document.getElementById('liveVideoElement');
+        let canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 300;
+        canvas.height = video.videoHeight || 400;
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        processAndSetImage(canvas.toDataURL('image/jpeg', 0.6));
+
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        document.getElementById('cameraModal').style.display = 'none';
+    });
+
+    document.getElementById('arabicTitleTrigger').addEventListener('click', function() {
+        arabicTapCount++;
+        if(arabicTapTimer) clearTimeout(arabicTapTimer);
+        if(arabicTapCount === 5) { arabicTapCount = 0; showPage('pinPage'); }
+        else { arabicTapTimer = setTimeout(() => { arabicTapCount = 0; }, 800); }
+    });
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => { 
+            if(p.id !== 'studentModal' && p.id !== 'formViewModal' && p.id !== 'sourceSelectModal') p.classList.remove('active-page'); 
+        });
+        document.getElementById(pageId).classList.add('active-page');
+        if(pageId === 'adminDashboard') loadDashboardData();
+        if(pageId === 'successPage') startBalloonsAndConfetti();
+    }
+
+    function handlePinBack() { document.getElementById('adminPin').value = ''; showPage('welcomePage'); }
+    function handleLoginBack() { document.getElementById('adminUser').value = ''; document.getElementById('adminPass').value = ''; showPage('pinPage'); }
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        document.getElementById('adminUser').value = '';
+        document.getElementById('adminPass').value = '';
+        document.getElementById('adminPin').value = '';
+        showPage('welcomePage');
+    });
+
+    document.querySelectorAll('.sidebar-menu li[data-tab]').forEach(li => {
+        li.addEventListener('click', function() { switchTab(this.getAttribute('data-tab'), this); });
+    });
+
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active-tab'));
+        document.querySelectorAll('.sidebar-menu li[data-tab]').forEach(l => l.classList.remove('active'));
+        
+        let targetTab = document.getElementById(tabId);
+        if(targetTab) targetTab.classList.add('active-tab');
+        if(el) el.classList.add('active');
+        
+        document.getElementById('appSidebar').classList.remove('sidebar-open');
+        loadDashboardData();
+    }
+
+    document.getElementById('toggleSidebarBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        let sidebar = document.getElementById('appSidebar');
+        sidebar.classList.toggle('sidebar-open');
+    });
+
+    document.getElementById('agreeCheck').addEventListener('change', function() {
+        document.getElementById('rulesNextBtn').style.display = this.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('regForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        let phoneVal = phoneInput.value.trim();
+        if (phoneVal.length !== 11) {
+            alert('Lambar waya dole ta zama lamba 11 takamaimai!');
+            phoneInput.focus();
+            return;
+        }
+
+        if(!tempPassportBase64) { alert('Don Allah ka zabi hoton passport tukuna!'); return; }
+        
+        let firstName = document.getElementById('firstName').value || 'Dalibi';
+        let whatsappMsg = `Assalamu Alaikum Admin, Sunana ${firstName}. Ina son samun Confirmation Code din shiga makaranta.`;
+        document.getElementById('whatsappLinkBtn').href = `https://wa.me/2347056845435?text=${encodeURIComponent(whatsappMsg)}`;
+
+        showPage('codePage');
+    });
+
+    function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
+    function checkAndArchiveRevenue(students) {
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let now = new Date();
+        let curMonthName = monthNames[now.getMonth()];
+        let curYear = now.getFullYear();
+        let curMonthKey = `${curMonthName} ${curYear}`;
+
+        let archives = JSON.parse(localStorage.getItem('db_monthly_archives')) || [];
+        let monthlyMap = {};
+
+        students.forEach(s => {
+            let d = new Date(s.timestamp || Date.now());
+            let mName = monthNames[d.getMonth()];
+            let yNum = d.getFullYear();
+            let mKey = `${mName} ${yNum}`;
+
+            if(!monthlyMap[mKey]) {
+                monthlyMap[mKey] = { beginner: 0, intermediate: 0, advance: 0, total: 0, daysCount: getDaysInMonth(yNum, d.getMonth()) };
+            }
+            let fee = 1500;
+            if(s.section === 'Beginner') monthlyMap[mKey].beginner += fee;
+            else if(s.section === 'Intermediate') monthlyMap[mKey].intermediate += fee;
+            else if(s.section === 'Advance') monthlyMap[mKey].advance += fee;
+            monthlyMap[mKey].total += fee;
+        });
+
+        for(let mKey in monthlyMap) {
+            if(mKey !== curMonthKey) {
+                let exists = archives.find(a => a.monthKey === mKey);
+                if(!exists) {
+                    archives.push({
+                        monthKey: mKey,
+                        beginner: monthlyMap[mKey].beginner,
+                        intermediate: monthlyMap[mKey].intermediate,
+                        advance: monthlyMap[mKey].advance,
+                        total: monthlyMap[mKey].total,
+                        days: monthlyMap[mKey].daysCount
+                    });
+                }
+            }
+        }
+        localStorage.setItem('db_monthly_archives', JSON.stringify(archives));
+    }
+
+    async function fetchSupabaseCodes() {
+        if(supabaseClient) {
+            try {
+                let { data, error } = await supabaseClient.from('codes').select('*');
+                if (!error && data) {
+                    localStorage.setItem('db_codes', JSON.stringify(data));
+                    return data;
+                }
+            } catch(e) { console.error(e); }
+        }
+        return JSON.parse(localStorage.getItem('db_codes')) || [];
+    }
+
+    async function fetchSupabaseStudents() {
+        if(supabaseClient) {
+            try {
+                let { data, error } = await supabaseClient.from('students').select('*').order('id', { ascending: false });
+                if (!error && data) {
+                    localStorage.setItem('db_students', JSON.stringify(data));
+                    return data;
+                }
+            } catch(e) { console.error(e); }
+        }
+        return JSON.parse(localStorage.getItem('db_students')) || [];
+    }
+
+    async function fetchSupabaseNotices() {
+        if(supabaseClient) {
+            try {
+                let { data, error } = await supabaseClient.from('notices').select('*');
+                if (!error && data) {
+                    localStorage.setItem('db_notices', JSON.stringify(data));
+                    return data;
+                }
+            } catch(e) { console.error(e); }
+        }
+        return JSON.parse(localStorage.getItem('db_notices')) || [];
+    }
+
+    document.getElementById('finalizeRegBtn').addEventListener('click', async function() {
+        let codeInput = document.getElementById('confCodeInput').value.trim().toLowerCase();
+        let codesObj = await fetchSupabaseCodes();
+        
+        let foundCode = codesObj.find(c => c.code.toLowerCase() === codeInput);
+        if(!foundCode) { alert('Wannan Confirmation Code bai wanzu ba!'); return; }
+        if(foundCode.used) { alert('An riga an yi amfani da wannan code din!'); return; }
+
+        let detectedClass = '';
+        if(codeInput.startsWith('bgr_')) detectedClass = 'Beginner';
+        else if(codeInput.startsWith('itm_')) detectedClass = 'Intermediate';
+        else if(codeInput.startsWith('adv_')) detectedClass = 'Advance';
+        else { alert('Wannan Code din bai fara da harafin wani aji ba (bgr_, itm_, adv_)!'); return; }
+
+        foundCode.used = true;
+        if(supabaseClient) {
+            await supabaseClient.from('codes').update({ used: true }).eq('code', foundCode.code);
+        }
+        localStorage.setItem('db_codes', JSON.stringify(codesObj));
+
+        let students = await fetchSupabaseStudents();
+        let codePrefix = detectedClass.charAt(0).toUpperCase();
+        let userId = `DHA${Math.floor(Math.random()*90+10)}${codePrefix}${String(students.length+1).padStart(4,'0')}`;
+        let now = new Date();
+        let timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let dateStr = now.toLocaleDateString();
+
+        let newStudent = {
+            userId: userId,
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            age: document.getElementById('age').value,
+            email: document.getElementById('email').value || 'N/A',
+            gender: document.getElementById('gender').value,
+            address: document.getElementById('address').value,
+            phone: phoneInput.value,
+            section: detectedClass,
+            usedCode: foundCode.code,
+            passport: tempPassportBase64,
+            time: timeStr,
+            date: dateStr,
+            timestamp: now.getTime()
+        };
+
+        if(supabaseClient) {
+            await supabaseClient.from('students').insert([newStudent]);
+        }
+
+        students.unshift(newStudent);
+        localStorage.setItem('db_students', JSON.stringify(students));
+
+        checkAndArchiveRevenue(students);
+
+        let newNotice = {
+            id: 'notice_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+            studentId: newStudent.userId,
+            section: newStudent.section,
+            unread: true
+        };
+        
+        if(supabaseClient) {
+            await supabaseClient.from('notices').insert([newNotice]);
+        }
+        
+        let notices = await fetchSupabaseNotices();
+        notices.unshift(newNotice);
+        localStorage.setItem('db_notices', JSON.stringify(notices));
+
+        populateCertificateData(newStudent);
+        renderNotices();
+        
+        document.getElementById('regForm').reset();
+        tempPassportBase64 = '';
+        document.getElementById('passportPreviewImg').src = 'young.jpg';
+        document.getElementById('confCodeInput').value = '';
+        document.getElementById('agreeCheck').checked = false;
+        document.getElementById('rulesNextBtn').style.display = 'none';
+
+        showPage('successPage');
+    });
+
+    function populateCertificateData(s) {
+        document.getElementById('formCardFirstName').innerText = s.firstName;
+        document.getElementById('formCardLastName').innerText = s.lastName;
+        document.getElementById('formCardUserId').innerText = s.userId;
+        document.getElementById('formCardPhone').innerText = s.phone;
+        document.getElementById('formCardAddress').innerText = s.address;
+        document.getElementById('formCardEmail').innerText = s.email || 'N/A';
+        document.getElementById('formCardSection').innerText = s.section || 'ONLINE';
+        document.getElementById('studentSigLine').innerText = `${s.firstName} ${s.lastName}`;
+        document.getElementById('formCardDate1').innerText = s.date;
+        document.getElementById('formCardDate2').innerText = s.date;
+
+        let pBox = document.getElementById('formCardPassportBox');
+        if(s.passport) pBox.innerHTML = `<img src="${s.passport}" alt="Passport">`; else pBox.innerText = 'PHOTO';
+
+        let waText = `Assalamu Alaikum Admin, Ga fom dina na rajista Darul Huffaz:\n\n*Student ID:* ${s.userId}\n*Suna:* ${s.firstName} ${s.lastName}\n*Email:* ${s.email || 'N/A'}`;
+        document.getElementById('whatsappSendBtn').href = `https://wa.me/2347056845435?text=${encodeURIComponent(waText)}`;
+    }
+
+    function startBalloonsAndConfetti() {
+        let bContainer = document.getElementById('balloonsContainer');
+        let cContainer = document.getElementById('confettiContainer');
+        bContainer.innerHTML = ''; cContainer.innerHTML = '';
+        for(let i=0; i<10; i++) {
+            let b = document.createElement('div'); b.className = 'balloon';
+            b.style.left = Math.random() * 90 + '%'; b.style.backgroundColor = ['#ef4444','#fbbf24','#10b981'][i%3];
+            bContainer.appendChild(b);
+        }
+        for(let i=0; i<20; i++) {
+            let c = document.createElement('div'); c.className = 'confetti';
+            c.style.left = Math.random() * 100 + '%'; c.style.backgroundColor = ['#f59e0b','#10b981','#ef4444'][i%3];
+            cContainer.appendChild(c);
+        }
+    }
+
+    document.getElementById('downloadFormBtn').addEventListener('click', function() {
+        html2canvas(document.getElementById('printableFormCard'), { scale: 2 }).then(canvas => {
+            let link = document.createElement('a'); link.download = 'Darul_Huffaz_Form.png'; link.href = canvas.toDataURL('image/png'); link.click();
+        });
+    });
+
+    document.getElementById('verifyPinBtn').addEventListener('click', function() {
+        if(document.getElementById('adminPin').value === '676767') showPage('loginPage'); else alert('PIN bai daidai ba!');
+    });
+
+    document.getElementById('verifyLoginBtn').addEventListener('click', function() {
+        let u = document.getElementById('adminUser').value.trim();
+        let p = document.getElementById('adminPass').value.trim();
+        if(u === localStorage.getItem('admin_user') && p === localStorage.getItem('admin_pass')) {
+            document.getElementById('adminWelcomeUser').innerText = `Admin: ${u}`;
+            showPage('adminDashboard');
+        } else { alert('Username ko Password bai daidai ba!'); }
+    });
+
+    async function loadDashboardData() {
+        let students = await fetchSupabaseStudents();
+        checkAndArchiveRevenue(students);
+
+        let totalRev = students.length * 1500;
+        document.getElementById('statTotalStudents').innerText = students.length;
+        document.getElementById('statTotalRevenue').innerText = `₦${totalRev.toLocaleString()}`;
+
+        let countAll = students.length;
+        let countBeginner = students.filter(s => s.section === 'Beginner').length;
+        let countIntermediate = students.filter(s => s.section === 'Intermediate').length;
+        let countAdvance = students.filter(s => s.section === 'Advance').length;
+
+        document.getElementById('badgeAllStudents').innerText = countAll;
+        document.getElementById('badgeBeginner').innerText = countBeginner;
+        document.getElementById('badgeIntermediate').innerText = countIntermediate;
+        document.getElementById('badgeAdvance').innerText = countAdvance;
+
+        renderMonthlyRevenueTab(students);
+        renderAllStudentsTable();
+        renderClassTables();
+        renderFormsList();
+        renderCodesEngines();
+        renderNotices();
+        renderPromoDemo();
+    }
+
+    function renderMonthlyRevenueTab(students) {
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let now = new Date();
+        let curMonthName = monthNames[now.getMonth()];
+        let curYear = now.getFullYear();
+        let daysInCurMonth = getDaysInMonth(now.getFullYear(), now.getMonth());
+        
+        document.getElementById('currentMonthTitleHeading').innerText = `Watan da ake ciki: ${curMonthName} ${curYear} (Days: ${daysInCurMonth})`;
+
+        let curRev = { Beginner: 0, Intermediate: 0, Advance: 0 };
+        students.forEach(s => {
+            let d = new Date(s.timestamp || Date.now());
+            if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+                if(curRev[s.section] !== undefined) curRev[s.section] += 1500;
+            }
+        });
+        let curTotal = Object.values(curRev).reduce((a,b)=>a+b, 0);
+
+        document.getElementById('curBeginnerRev').innerText = `₦${curRev.Beginner.toLocaleString()}`;
+        document.getElementById('curIntermediateRev').innerText = `₦${curRev.Intermediate.toLocaleString()}`;
+        document.getElementById('curAdvanceRev').innerText = `₦${curRev.Advance.toLocaleString()}`;
+        document.getElementById('curAllRev').innerText = `₦${curTotal.toLocaleString()}`;
+
+        let archives = JSON.parse(localStorage.getItem('db_monthly_archives')) || [];
+        let archiveContainer = document.getElementById('monthlyArchivesListContainer');
+
+        archiveContainer.innerHTML = archives.length ? archives.map(a => `
+            <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <strong style="color: var(--primary); font-size: 15px;">${a.monthKey} (Days: ${a.days})</strong>
+                    <div style="font-size: 12.5px; color: #475569; margin-top: 4px;">
+                        Beginner: ₦${(a.beginner || 0).toLocaleString()} | Intermediate: ₦${(a.intermediate || 0).toLocaleString()} | Advance: ₦${(a.advance || 0).toLocaleString()}
+                    </div>
+                </div>
+                <div style="background: #f0fdf4; border: 1px solid #10b981; padding: 6px 14px; border-radius: 8px; font-weight: bold; color: #047857; font-size: 14px;">
+                    All: ₦${a.total.toLocaleString()}
+                </div>
+            </div>
+        `).join('') : '<p style="color: #64748b; font-size: 13px;">Babu tsofaffin watanni da aka adana a halin yanzu.</p>';
+    }
+
+    document.getElementById('noticeBellWrapper').addEventListener('click', function(e) {
+        e.stopPropagation();
+        document.getElementById('noticeDropdown').classList.toggle('show');
+    });
+
+    window.addEventListener('click', function(e) {
+        let dropdown = document.getElementById('noticeDropdown');
+        if(dropdown && dropdown.classList.contains('show')) dropdown.classList.remove('show');
+        
+        let sidebar = document.getElementById('appSidebar');
+        let toggleBtn = document.getElementById('toggleSidebarBtn');
+        if (sidebar && sidebar.classList.contains('sidebar-open')) {
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('sidebar-open');
+            }
+        }
+    });
+
+    async function renderNotices() {
+        let notices = await fetchSupabaseNotices();
+        let students = await fetchSupabaseStudents();
+        let badge = document.getElementById('noticeBadgeCount');
+        let container = document.getElementById('noticeListContainer');
+
+        let unreadCount = notices.filter(n => n.unread).length;
+        badge.innerText = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+
+        container.innerHTML = notices.length ? notices.map(n => {
+            let student = students.find(s => s.userId === n.studentId);
+            let displayName = student ? `${student.firstName} ${student.lastName}` : 'Dalibi';
+            return `
+                <div class="notice-item ${n.unread ? 'unread' : ''}" onclick="openStudentModal('${n.studentId}'); markNotice('${n.id}'); event.stopPropagation();">
+                    <div>
+                        <div style="font-weight: bold; color: var(--primary); font-size: 13.5px;">ID: ${n.studentId}</div>
+                        <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                            ${displayName} | Aji: <b style="color:#d97706;">${n.section}</b>
+                        </div>
+                    </div>
+                    <div class="notice-actions" onclick="event.stopPropagation();">
+                        <button class="notice-btn" style="background:#ef4444;" onclick="deleteNotice('${n.id}')">✕</button>
+                    </div>
+                </div>
+            `;
+        }).join('') : '<p style="padding:15px; text-align:center; color:#64748b; font-size:12px;">Babu sanarwa.</p>';
+    }
+
+    async function markNotice(noticeId) {
+        let notices = await fetchSupabaseNotices();
+        let target = notices.find(n => n.id === noticeId);
+        if(target) {
+            target.unread = false;
+            if(supabaseClient) await supabaseClient.from('notices').update({ unread: false }).eq('id', noticeId);
+            localStorage.setItem('db_notices', JSON.stringify(notices));
+            renderNotices();
+        }
+    }
+
+    document.getElementById('markAllNoticesBtn').addEventListener('click', async function(e) {
+        e.stopPropagation();
+        let notices = await fetchSupabaseNotices();
+        notices.forEach(n => n.unread = false);
+        if(supabaseClient) await supabaseClient.from('notices').update({ unread: false }).neq('id', '0');
+        localStorage.setItem('db_notices', JSON.stringify(notices));
+        renderNotices();
+    });
+
+    document.getElementById('delAllNoticesBtn').addEventListener('click', async function(e) {
+        e.stopPropagation();
+        if(confirm('Tabbas ka amince ka goge duk sanarwa?')) {
+            if(supabaseClient) await supabaseClient.from('notices').delete().neq('id', '0');
+            localStorage.setItem('db_notices', JSON.stringify([]));
+            renderNotices();
+        }
+    });
+
+    async function deleteNotice(noticeId) {
+        let notices = await fetchSupabaseNotices();
+        notices = notices.filter(n => n.id !== noticeId);
+        if(supabaseClient) await supabaseClient.from('notices').delete().eq('id', noticeId);
+        localStorage.setItem('db_notices', JSON.stringify(notices));
+        renderNotices();
+    }
+
+    async function generateCodesForClass(section) {
+        let prefix = section === 'Beginner' ? 'bgr_' : section === 'Intermediate' ? 'itm_' : 'adv_';
+        let codes = await fetchSupabaseCodes();
+        let newCodes = [];
+        for(let i=0; i<20; i++) {
+            let rand = Math.random().toString(36).substring(2, 7);
+            let codeStr = `${prefix}${rand}`;
+            newCodes.push({ code: codeStr, section: section, used: false });
+        }
+        if(supabaseClient) {
+            await supabaseClient.from('codes').insert(newCodes);
+        }
+        codes.push(...newCodes);
+        localStorage.setItem('db_codes', JSON.stringify(codes));
+        renderCodesEngines();
+    }
+
+    async function copyAllCodes(section) {
+        let codes = await fetchSupabaseCodes();
+        let sectionCodes = codes.filter(c => c.section === section && !c.used).map(c => c.code).join('\n');
+        if(!sectionCodes) { alert('Babu sababbin codes da za a kofa.'); return; }
+        navigator.clipboard.writeText(sectionCodes).then(() => {
+            alert(`An kwofance dukkan codes na ${section} lami lafiya!`);
+        });
+    }
+
+    async function deleteAllCodes(section) {
+        if(confirm(`Tabbas kana son goge dukkan codes na ${section}?`)) {
+            let codes = await fetchSupabaseCodes();
+            codes = codes.filter(c => c.section !== section);
+            if(supabaseClient) await supabaseClient.from('codes').delete().eq('section', section);
+            localStorage.setItem('db_codes', JSON.stringify(codes));
+            renderCodesEngines();
+        }
+    }
+
+    async function renderCodesEngines() {
+        let codes = await fetchSupabaseCodes();
+
+        ['Beginner', 'Intermediate', 'Advance'].forEach(sec => {
+            let secCodes = codes.filter(c => c.section === sec);
+            let container = document.getElementById(`listEngine${sec}`);
+            let badge = document.getElementById(`countBadge${sec}`);
+            
+            badge.innerText = `${secCodes.filter(c => !c.used).length} active / ${secCodes.length} total`;
+            container.innerHTML = secCodes.length ? secCodes.map(c => `
+                <div style="font-family:monospace; font-size:12.5px; padding:4px 8px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="${c.used ? 'text-decoration:line-through; color:#94a3b8;' : 'color:#0f172a; font-weight:bold;'}">${c.code}</span>
+                    <span style="font-size:10px; padding:2px 6px; border-radius:4px; ${c.used ? 'background:#fee2e2; color:#ef4444;' : 'background:#d1fae5; color:#047857;'}">${c.used ? 'Used' : 'Active'}</span>
+                </div>
+            `).join('') : '<p style="font-size:12px; color:#64748b;">Babu code.</p>';
+        });
+    }
+
+    async function openStudentModal(userId) {
+        let students = await fetchSupabaseStudents();
+        let s = students.find(item => item.userId === userId);
+        if(!s) return;
+
+        selectedModalUserId = s.userId;
+        document.getElementById('modalStudentId').innerText = s.userId;
+        document.getElementById('modalStudentName').innerText = `${s.firstName} ${s.lastName}`;
+        document.getElementById('modalStudentClass').innerText = s.section;
+        document.getElementById('modalStudentGender').innerText = s.gender;
+        document.getElementById('modalStudentEmail').innerText = s.email || 'N/A';
+        document.getElementById('modalStudentCode').innerText = s.usedCode || 'N/A';
+        document.getElementById('modalStudentPhone').innerText = s.phone;
+        document.getElementById('modalStudentAddress').innerText = s.address;
+        document.getElementById('modalStudentTime').innerText = s.time || '--:--';
+        document.getElementById('modalStudentDate').innerText = s.date || '--/--/--';
+
+        document.getElementById('studentModal').style.display = 'flex';
+    }
+
+    document.getElementById('closeStudentModalBtn').addEventListener('click', function() {
+        document.getElementById('studentModal').style.display = 'none';
+    });
+
+    document.getElementById('deleteStudentBtn').addEventListener('click', async function() {
+        if(selectedModalUserId && confirm('Tabbas kana son goge wannan dalibin kwata-kwata?')) {
+            let students = await fetchSupabaseStudents();
+            students = students.filter(s => s.userId !== selectedModalUserId);
+            if(supabaseClient) await supabaseClient.from('students').delete().eq('userId', selectedModalUserId);
+            localStorage.setItem('db_students', JSON.stringify(students));
+            
+            document.getElementById('studentModal').style.display = 'none';
+            loadDashboardData();
+        }
+    });
+
+    async function renderAllStudentsTable() {
+        let students = await fetchSupabaseStudents();
+        let container = document.getElementById('allStudentTableContainer');
+        container.innerHTML = generateTableHTML(students);
+    }
+
+    async function renderClassTables() {
+        let students = await fetchSupabaseStudents();
+        document.getElementById('classBeginnerTableContainer').innerHTML = generateTableHTML(students.filter(s => s.section === 'Beginner'));
+        document.getElementById('classIntermediateTableContainer').innerHTML = generateTableHTML(students.filter(s => s.section === 'Intermediate'));
+        document.getElementById('classAdvanceTableContainer').innerHTML = generateTableHTML(students.filter(s => s.section === 'Advance'));
+    }
+
+    function generateTableHTML(studentList) {
+        if(!studentList.length) return '<p style="color:#64748b; font-size:13px;">Babu dalibai a wannan jerin.</p>';
+        return `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Suna</th>
+                        <th>Aji</th>
+                        <th>Lambar Waya</th>
+                        <th>Tarihi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${studentList.map(s => `
+                        <tr onclick="openStudentModal('${s.userId}')">
+                            <td><strong style="color:var(--primary);">${s.userId}</strong></td>
+                            <td>${s.firstName} ${s.lastName}</td>
+                            <td><span style="font-weight:bold; color:#d97706;">${s.section}</span></td>
+                            <td>${s.phone}</td>
+                            <td>${s.date || '--'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    async function renderPromoDemo() {
+        let students = await fetchSupabaseStudents();
+        let search = (document.getElementById('promoSearchInput').value || '').toLowerCase();
+        let filtered = students.filter(s => s.userId.toLowerCase().includes(search) || `${s.firstName} ${s.lastName}`.toLowerCase().includes(search));
+        let container = document.getElementById('promoDemoContainer');
+
+        container.innerHTML = filtered.length ? filtered.map(s => `
+            <div class="promo-card">
+                <div class="promo-info">
+                    <h4>${s.firstName} ${s.lastName} (${s.userId})</h4>
+                    <p>Wanda yake a ajin: <b style="color:var(--primary);">${s.section}</b></p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="promoteStudent('${s.userId}')" style="background:#10b981; color:white; padding:6px 12px; font-size:12px; margin:0; width:auto;">Promote ➔</button>
+                    <button type="button" onclick="demoteStudent('${s.userId}')" style="background:#ef4444; color:white; padding:6px 12px; font-size:12px; margin:0; width:auto;">⬅ Demote</button>
+                </div>
+            </div>
+        `).join('') : '<p style="color:#64748b; font-size:13px;">Babu sakamako.</p>';
+    }
+
+    async function promoteStudent(userId) {
+        let students = await fetchSupabaseStudents();
+        let s = students.find(item => item.userId === userId);
+        if(!s) return;
+        if(s.section === 'Beginner') s.section = 'Intermediate';
+        else if(s.section === 'Intermediate') s.section = 'Advance';
+        else { alert('Dalibi yana ajin ƙarshe (Advance)!'); return; }
+
+        if(supabaseClient) await supabaseClient.from('students').update({ section: s.section }).eq('userId', userId);
+        localStorage.setItem('db_students', JSON.stringify(students));
+        loadDashboardData();
+    }
+
+    async function demoteStudent(userId) {
+        let students = await fetchSupabaseStudents();
+        let s = students.find(item => item.userId === userId);
+        if(!s) return;
+        if(s.section === 'Advance') s.section = 'Intermediate';
+        else if(s.section === 'Intermediate') s.section = 'Beginner';
+        else { alert('Dalibi yana ajin farko (Beginner)!'); return; }
+
+        if(supabaseClient) await supabaseClient.from('students').update({ section: s.section }).eq('userId', userId);
+        localStorage.setItem('db_students', JSON.stringify(students));
+        loadDashboardData();
+    }
+
+    document.getElementById('promoSearchInput').addEventListener('input', renderPromoDemo);
+
+    async function renderFormsList() {
+        let students = await fetchSupabaseStudents();
+        let search = (document.getElementById('formsSearchInput').value || '').toLowerCase();
+        let filtered = students.filter(s => {
+            let matchesFilter = currentFormFilter === 'ALL' || s.section === currentFormFilter;
+            let matchesSearch = s.userId.toLowerCase().includes(search) || `${s.firstName} ${s.lastName}`.toLowerCase().includes(search);
+            return matchesFilter && matchesSearch;
+        });
+
+        let container = document.getElementById('formsListContainer');
+        container.innerHTML = filtered.length ? filtered.map(s => `
+            <div style="background:#fff; border:1px solid #cbd5e1; padding:12px 18px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:var(--primary);">${s.userId}</strong> - ${s.firstName} ${s.lastName} (${s.section})
+                </div>
+                <button type="button" onclick="openAdminFormView('${s.userId}')" style="background:var(--secondary); color:white; padding:6px 14px; font-size:12px; margin:0; width:auto;">View Form</button>
+            </div>
+        `).join('') : '<p style="color:#64748b; font-size:13px;">Babu fofannin rajista.</p>';
+    }
+
+    function filterFormTab(section, btn) {
+        currentFormFilter = section;
+        document.querySelectorAll('.form-filter-btn').forEach(b => {
+            b.style.background = '#e2e8f0';
+            b.style.color = '#334155';
+        });
+        btn.style.background = 'var(--primary)';
+        btn.style.color = 'var(--accent)';
+        renderFormsList();
+    }
+
+    document.getElementById('formsSearchInput').addEventListener('input', renderFormsList);
+
+    async function openAdminFormView(userId) {
+        let students = await fetchSupabaseStudents();
+        let s = students.find(item => item.userId === userId);
+        if(!s) return;
+
+        document.getElementById('adminFormFirstName').innerText = s.firstName;
+        document.getElementById('adminFormLastName').innerText = s.lastName;
+        document.getElementById('adminFormUserId').innerText = s.userId;
+        document.getElementById('adminFormPhone').innerText = s.phone;
+        document.getElementById('adminFormAddress').innerText = s.address;
+        document.getElementById('adminFormEmail').innerText = s.email || 'N/A';
+        document.getElementById('adminFormSection').innerText = s.section || 'ONLINE';
+        document.getElementById('adminStudentSigLine').innerText = `${s.firstName} ${s.lastName}`;
+        document.getElementById('adminFormDate1').innerText = s.date || '--/--/--';
+        document.getElementById('adminFormDate2').innerText = s.date || '--/--/--';
+
+        let pBox = document.getElementById('adminFormPassportBox');
+        if(s.passport) pBox.innerHTML = `<img src="${s.passport}" alt="Passport">`; else pBox.innerText = 'PHOTO';
+
+        document.getElementById('formViewModal').style.display = 'flex';
+    }
+
+    document.getElementById('closeAdminFormModalBtn').addEventListener('click', function() {
+        document.getElementById('formViewModal').style.display = 'none';
+    });
+
+    document.getElementById('downloadAdminFormBtn').addEventListener('click', function() {
+        html2canvas(document.getElementById('adminPrintableFormCard'), { scale: 2 }).then(canvas => {
+            let link = document.createElement('a'); link.download = 'Student_Form.png'; link.href = canvas.toDataURL('image/png'); link.click();
+        });
+    });
+
+    document.getElementById('liveSearchInput').addEventListener('input', async function() {
+        let search = this.value.trim().toLowerCase();
+        let container = document.getElementById('searchDashboardResult');
+        if(!search) { container.innerHTML = ''; return; }
+
+        let students = await fetchSupabaseStudents();
+        let filtered = students.filter(s => s.userId.toLowerCase().includes(search) || `${s.firstName} ${s.lastName}`.toLowerCase().includes(search));
+        container.innerHTML = generateTableHTML(filtered);
+    });
+</script>
+</body>
+</html>
 
