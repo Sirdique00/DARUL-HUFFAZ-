@@ -971,12 +971,10 @@
         navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
                 mediaStream = stream;
-                let videoElement = document.getElementById('liveVideoElement');
-                videoElement.srcObject = stream;
-                videoElement.play();
+                document.getElementById('liveVideoElement').srcObject = stream;
             })
             .catch(err => {
-                alert('An samu matsala wajen buɗe kyamara (Tabbatar kana amfani da HTTPS ko Localhost, kuma ka ba da izini): ' + err.message);
+                alert('An samu matsala wajen buɗe camera: ' + err.message);
                 document.getElementById('cameraModal').style.display = 'none';
             });
     }
