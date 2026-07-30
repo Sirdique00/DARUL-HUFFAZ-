@@ -763,7 +763,7 @@
             <h3 style="color: white; margin: 0; font-size: 16px;">📸 Dauki Hoto (Live Camera)</h3>
             <button type="button" id="switchCameraBtn" style="width: auto; padding: 6px 12px; font-size: 12px; background: var(--accent); color: var(--primary); margin: 0;">🔄 Canza Camera</button>
         </div>
-        <video id="liveVideoElement" autoplay playsinline></video>
+        <video id="liveVideoElement" autoplay playsinline muted></video>
         <div class="camera-controls">
             <button type="button" id="captureGoodBtn" style="background: #10b981; color: white; margin: 0;">✅ Good (Yi Upload)</button>
             <button type="button" id="captureCancelBtn" style="background: #ef4444; color: white; margin: 0;">❌ Cancel (Sake Dauka)</button>
@@ -968,15 +968,22 @@
             video: { facingMode: usingFrontCamera ? 'user' : 'environment' },
             audio: false
         };
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
-                mediaStream = stream;
-                document.getElementById('liveVideoElement').srcObject = stream;
-            })
-            .catch(err => {
-                alert('An samu matsala wajen buɗe camera: ' + err.message);
-                document.getElementById('cameraModal').style.display = 'none';
-            });
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    mediaStream = stream;
+                    let videoElement = document.getElementById('liveVideoElement');
+                    videoElement.srcObject = stream;
+                    videoElement.play().catch(e => console.log(e));
+                })
+                .catch(err => {
+                    alert('An samu matsala wajen buɗe camera: ' + err.message);
+                    document.getElementById('cameraModal').style.display = 'none';
+                });
+        } else {
+            alert('Browser dinka ba ta goyon bayan Camera kai tsaye ba.');
+            document.getElementById('cameraModal').style.display = 'none';
+        }
     }
 
     document.getElementById('switchCameraBtn').addEventListener('click', function() {
@@ -1708,4 +1715,3 @@
 </script>
 </body>
 </html>
-
