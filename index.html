@@ -763,7 +763,7 @@
             <h3 style="color: white; margin: 0; font-size: 16px;">📸 Dauki Hoto (Live Camera)</h3>
             <button type="button" id="switchCameraBtn" style="width: auto; padding: 6px 12px; font-size: 12px; background: var(--accent); color: var(--primary); margin: 0;">🔄 Canza Camera</button>
         </div>
-        <video id="liveVideoElement" autoplay playsinline></video>
+        <video id="liveVideoElement" autoplay playsinline muted></video>
         <div class="camera-controls">
             <button type="button" id="captureGoodBtn" style="background: #10b981; color: white; margin: 0;">✅ Good (Yi Upload)</button>
             <button type="button" id="captureCancelBtn" style="background: #ef4444; color: white; margin: 0;">❌ Cancel (Sake Dauka)</button>
@@ -963,38 +963,36 @@
     function startCameraStream() {
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
         }
+        
         let constraints = {
-            video: { facingMode: usingFrontCamera ? 'user' : { exact: 'environment' } },
+            video: {
+                facingMode: usingFrontCamera ? 'user' : 'environment',
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
             audio: false
         };
-        
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
-                mediaStream = stream;
-                let videoElem = document.getElementById('liveVideoElement');
-                videoElem.srcObject = stream;
-                videoElem.play();
-            })
-            .catch(err => {
-                // If exact mode fails for rear camera, fallback to simple 'environment'
-                if(!usingFrontCamera) {
-                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-                    .then(stream => {
-                        mediaStream = stream;
-                        let videoElem = document.getElementById('liveVideoElement');
-                        videoElem.srcObject = stream;
-                        videoElem.play();
-                    })
-                    .catch(e => {
-                        alert('An samu matsala wajen buɗe camera: ' + e.message);
-                        document.getElementById('cameraModal').style.display = 'none';
-                    });
-                } else {
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    mediaStream = stream;
+                    let videoElement = document.getElementById('liveVideoElement');
+                    videoElement.srcObject = stream;
+                    videoElement.onloadedmetadata = () => {
+                        videoElement.play().catch(e => console.error("Video play error:", e));
+                    };
+                })
+                .catch(err => {
                     alert('An samu matsala wajen buɗe camera: ' + err.message);
                     document.getElementById('cameraModal').style.display = 'none';
-                }
-            });
+                });
+        } else {
+            alert('Wannan brausa ba ta goyon bayan live camera.');
+            document.getElementById('cameraModal').style.display = 'none';
+        }
     }
 
     document.getElementById('switchCameraBtn').addEventListener('click', function() {
@@ -1005,6 +1003,7 @@
     document.getElementById('captureCancelBtn').addEventListener('click', function() {
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
         }
         document.getElementById('cameraModal').style.display = 'none';
     });
@@ -1021,6 +1020,7 @@
 
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
         }
         document.getElementById('cameraModal').style.display = 'none';
     });
