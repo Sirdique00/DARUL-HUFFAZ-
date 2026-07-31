@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ha">
 <head>
     <meta charset="UTF-8">
@@ -1281,19 +1281,36 @@
         }
     }
 
-    // AN GYARA WANNAN WAJEN DOMIN YI SAUKI A WAYA (MOBILE FRIENDLY DOWNLOAD)
+    // GYARAN WAJEN SAFIYA / SAUKAR DA FORM DIN ZUWA WAYA (HIGH QUALITY & SPEED)
     document.getElementById('downloadFormBtn').addEventListener('click', function() {
-        let cardElement = document.getElementById('printableFormCard');
-        html2canvas(cardElement, { scale: 2, useCORS: true }).then(canvas => {
-            let imageURI = canvas.toDataURL('image/png');
+        let btn = this;
+        let originalText = btn.innerText;
+        btn.innerText = 'Ana shirya Form din... ⏳';
+        btn.disabled = true;
+
+        html2canvas(document.getElementById('printableFormCard'), { 
+            scale: 3, 
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null
+        }).then(canvas => {
+            let imageURI = canvas.toDataURL('image/png', 1.0);
             let link = document.createElement('a');
             link.download = 'Darul_Huffaz_Form.png';
             link.href = imageURI;
+            
+            // Wannan yana tabbatar da aiki a duk kan wayoyi (iPhone da Android)
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+
+            btn.innerText = originalText;
+            btn.disabled = false;
         }).catch(err => {
-            alert('An samu matsala wajen sauke fomin. A gwada sake danna wa.');
+            console.error(err);
+            alert('An samu matsala wajen sauke form din. Gwada sake dannawa.');
+            btn.innerText = originalText;
+            btn.disabled = false;
         });
     });
 
@@ -1701,8 +1718,8 @@
     });
 
     document.getElementById('downloadAdminFormBtn').addEventListener('click', function() {
-        html2canvas(document.getElementById('adminPrintableFormCard'), { scale: 2 }).then(canvas => {
-            let link = document.createElement('a'); link.download = 'Student_Form.png'; link.href = canvas.toDataURL('image/png'); link.click();
+        html2canvas(document.getElementById('adminPrintableFormCard'), { scale: 3, useCORS: true }).then(canvas => {
+            let link = document.createElement('a'); link.download = 'Student_Form.png'; link.href = canvas.toDataURL('image/png', 1.0); link.click();
         });
     });
 
