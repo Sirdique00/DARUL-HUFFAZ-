@@ -1281,9 +1281,19 @@
         }
     }
 
+    // AN GYARA WANNAN WAJEN DOMIN YI SAUKI A WAYA (MOBILE FRIENDLY DOWNLOAD)
     document.getElementById('downloadFormBtn').addEventListener('click', function() {
-        html2canvas(document.getElementById('printableFormCard'), { scale: 2 }).then(canvas => {
-            let link = document.createElement('a'); link.download = 'Darul_Huffaz_Form.png'; link.href = canvas.toDataURL('image/png'); link.click();
+        let cardElement = document.getElementById('printableFormCard');
+        html2canvas(cardElement, { scale: 2, useCORS: true }).then(canvas => {
+            let imageURI = canvas.toDataURL('image/png');
+            let link = document.createElement('a');
+            link.download = 'Darul_Huffaz_Form.png';
+            link.href = imageURI;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }).catch(err => {
+            alert('An samu matsala wajen sauke fomin. A gwada sake danna wa.');
         });
     });
 
