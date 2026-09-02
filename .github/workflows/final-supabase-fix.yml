@@ -1,0 +1,42 @@
+name: Final Supabase frontend fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: "!contains(github.event.head_commit.message, '[supabase-migration]') && !contains(github.event.head_commit.message, '[workflow-fix]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply existing Supabase frontend migration safely
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          workflow = Path('.github/workflows/harden-darul-huffaz.yml').read_text(encoding='utf-8')
+          html_path = Path('index.html')
+          html = html_path.read_text(encoding='utf-8')
+          m = re.search(r"js = r'''(.*?)'''", workflow, flags=re.S)
+          if not m:
+              raise SystemExit('Migration script not found in harden workflow')
+          js = m.group(1)
+          pattern = r'<script>\\s*// Supabase credentials.*?</script>'
+          new_html, n = re.subn(pattern, lambda _m: js, html, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'Legacy script block not found (matches={n}); index.html was not changed')
+          html_path.write_text(new_html, encoding='utf-8')
+          if 'localStorage' in new_html:
+              raise SystemExit('localStorage still present in index.html')
+          print('Supabase-only frontend migration applied; localStorage check passed.')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Apply final Supabase-only frontend migration [supabase-migration]' || echo 'No frontend changes to commit.'
+          git push
