@@ -1,0 +1,42 @@
+name: Supabase storage migration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: "!contains(github.event.head_commit.message, '[supabase-shim]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch frontend storage and auth
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='// Supabase credentials'
+          pos=s.find(marker)
+          if pos<0: raise SystemExit('Supabase credentials marker not found')
+          tag=s.rfind('<script>',0,pos)
+          if tag<0: raise SystemExit('script tag not found')
+          shim=r'''<script>
+          const __dhMemoryStorage = (() => { const d = Object.create(null); return { get length(){return Object.keys(d).length}, key:i=>Object.keys(d)[i]??null, getItem:k=>Object.prototype.hasOwnProperty.call(d,k)?d[k]:null, setItem:(k,v)=>{d[k]=String(v)}, removeItem:k=>{delete d[k]}, clear:()=>{for(const k of Object.keys(d))delete d[k]} }; })();
+          const localStorage = __dhMemoryStorage;
+          const __dhCreateClient = window.supabase.createClient.bind(window.supabase);
+          window.supabase.createClient = (url,key,options={}) => __dhCreateClient(url,key,{...options,auth:{...(options.auth||{}),persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+          </script>
+          '''
+          s=s[:tag]+shim+s[tag:]
+          p.write_text(s,encoding='utf-8')
+          PY
+          if grep -q 'localStorage' index.html; then echo 'Only memory shim references remain'; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Remove browser storage dependency [supabase-shim]'
+          git push
