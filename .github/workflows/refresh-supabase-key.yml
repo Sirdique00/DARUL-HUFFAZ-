@@ -1,0 +1,49 @@
+name: Refresh Supabase Frontend Config
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace Supabase client configuration
+        env:
+          SUPABASE_URL: https://jdjxlfaabzxmwbgxduwr.supabase.co
+          SUPABASE_KEY: sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, os
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          url = os.environ['SUPABASE_URL']
+          key = os.environ['SUPABASE_KEY']
+          s = re.sub(r"const\s+SUPABASE_URL\s*=\s*['\"][^'\"]+['\"];", f"const SUPABASE_URL = '{url}';", s)
+          s = re.sub(r"const\s+SUPABASE_PUBLISHABLE_KEY\s*=\s*['\"][^'\"]+['\"];", f"const SUPABASE_PUBLISHABLE_KEY = '{key}';", s)
+          p.write_text(s, encoding='utf-8')
+          PY
+          test "$(grep -o "const SUPABASE_URL = '[^']*'" index.html | head -1)" = "const SUPABASE_URL = 'https://jdjxlfaabzxmwbgxduwr.supabase.co'"
+          grep -q "const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-'" index.html
+          if grep -q "sb_publishable__XP-1m___1AaPk8gbfCkyA_NA-87Tjw" index.html; then echo 'OLD_SUPABASE_KEY_STILL_PRESENT'; exit 1; fi
+      - name: Verify no legacy browser storage
+        run: |
+          if grep -nE "localStorage|sessionStorage" index.html; then
+            echo 'BROWSER_STORAGE_FOUND'; exit 1
+          fi
+      - name: Commit refreshed configuration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No frontend config change needed.'
+          else
+            git commit -m 'Use current Supabase publishable key'
+            git push
+          fi
