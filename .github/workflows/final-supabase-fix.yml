@@ -26,14 +26,25 @@ jobs:
           if not m:
               raise SystemExit('Migration script not found in harden workflow')
           js = m.group(1)
-          pattern = r'<script>\s*// Supabase credentials.*?</script>'
-          new_html, n = re.subn(pattern, lambda _m: js, html, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit(f'Legacy script block not found (matches={n}); index.html was not changed')
+          patterns = [
+              r'<script>\s*const __dhMemoryStorage.*?</script>\s*<script>\s*// Supabase credentials.*?</script>',
+              r'<script>\s*// Supabase credentials.*?</script>',
+          ]
+          new_html = html
+          total = 0
+          for pattern in patterns:
+              new_html, n = re.subn(pattern, lambda _m: js, new_html, count=1, flags=re.S)
+              total += n
+              if n:
+                  break
+          if total != 1:
+              raise SystemExit('Legacy Supabase script block not found; index.html was not changed')
           html_path.write_text(new_html, encoding='utf-8')
           if 'localStorage' in new_html:
               raise SystemExit('localStorage still present in index.html')
-          print('Supabase-only frontend migration applied; localStorage check passed.')
+          if 'const __dhMemoryStorage' in new_html:
+              raise SystemExit('browser-memory storage shim still present')
+          print('Supabase-only frontend migration applied; no browser storage references remain.')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
