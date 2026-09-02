@@ -872,6 +872,12 @@ const __dhCreateClient = window.supabase.createClient.bind(window.supabase);
 window.supabase.createClient = (url,key,options={}) => __dhCreateClient(url,key,{...options,auth:{...(options.auth||{}),persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 </script>
 <script>
+const __dhMemoryStorage = (() => { const d = Object.create(null); return { get length(){return Object.keys(d).length}, key:i=>Object.keys(d)[i]??null, getItem:k=>Object.prototype.hasOwnProperty.call(d,k)?d[k]:null, setItem:(k,v)=>{d[k]=String(v)}, removeItem:k=>{delete d[k]}, clear:()=>{for(const k of Object.keys(d))delete d[k]} }; })();
+const localStorage = __dhMemoryStorage;
+const __dhCreateClient = window.supabase.createClient.bind(window.supabase);
+window.supabase.createClient = (url,key,options={}) => __dhCreateClient(url,key,{...options,auth:{...(options.auth||{}),persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+</script>
+<script>
     // Supabase credentials dinka na gaskiya:
     const SUPABASE_URL = 'https://aobizjaqoctzbmzmpvrz.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable__XP-1m___1AaPk8gbfCkyA_NA-87Tjw';
