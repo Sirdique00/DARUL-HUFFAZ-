@@ -1,1 +1,1 @@
-execute final migration
+execute final migration v2
