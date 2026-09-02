@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/final-supabase-fix.yml'
       - 'final-migration-execute.txt'
+      - 'final-force-execute.txt'
 
 permissions:
   contents: write
@@ -20,6 +21,8 @@ jobs:
       - name: Apply final Supabase-only frontend
         shell: bash
         run: |
+          git fetch origin main
+          git reset --hard origin/main
           python3 - <<'PY'
           from pathlib import Path
           import subprocess, re
@@ -27,8 +30,7 @@ jobs:
           html = html_path.read_text(encoding='utf-8')
           workflow = subprocess.check_output(['git','show','397dd581818f003c0a6ed4bf456a0978ca4d0a89:.github/workflows/harden-darul-huffaz.yml'], text=True)
           m = re.search(r"js = r'''(.*?)'''", workflow, flags=re.S)
-          if not m:
-              raise SystemExit('Migration script not found')
+          if not m: raise SystemExit('Migration script not found')
           js = m.group(1)
           patterns = [
               r'<script>\s*const __dhMemoryStorage.*?</script>\s*<script>\s*// Supabase credentials.*?</script>',
@@ -36,12 +38,9 @@ jobs:
           ]
           for pattern in patterns:
               new_html, n = re.subn(pattern, lambda _m: js, html, count=1, flags=re.S)
-              if n:
-                  break
-          else:
-              raise SystemExit('Legacy frontend script block not found')
-          if 'localStorage' in new_html or 'const __dhMemoryStorage' in new_html:
-              raise SystemExit('Browser storage dependency remains')
+              if n: break
+          else: raise SystemExit('Legacy frontend script block not found')
+          if 'localStorage' in new_html or 'const __dhMemoryStorage' in new_html: raise SystemExit('Browser storage dependency remains')
           html_path.write_text(new_html, encoding='utf-8')
           print('Final Supabase-only frontend applied successfully.')
           PY
@@ -49,4 +48,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git commit -m 'Finalize Supabase-only frontend [supabase-migration]' || true
-          git push
+          git push --force-with-lease origin main
