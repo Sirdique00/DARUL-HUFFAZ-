@@ -26,7 +26,7 @@ jobs:
           if not m:
               raise SystemExit('Migration script not found in harden workflow')
           js = m.group(1)
-          pattern = r'<script>\\s*// Supabase credentials.*?</script>'
+          pattern = r'<script>\s*// Supabase credentials.*?</script>'
           new_html, n = re.subn(pattern, lambda _m: js, html, count=1, flags=re.S)
           if n != 1:
               raise SystemExit(f'Legacy script block not found (matches={n}); index.html was not changed')
