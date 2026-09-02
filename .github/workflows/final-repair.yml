@@ -17,58 +17,48 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          # Keep all existing UI/features; only repair backend/data/image handling.
           s=s.replace("maxW=900,maxH=1100", "maxW=720,maxH=900")
           s=s.replace("toDataURL('image/jpeg',0.82)", "toDataURL('image/jpeg',0.76)")
           s=s.replace("select('amount,paid_at,status')", "select('student_id,amount,paid_at,status')")
-          old="""                  let {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-                  if(error){
-                      const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
-                      if(sign.error)throw error;
-                      if(!sign.data.session){alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka sake Login.');return;}
-                      const boot=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0]}}); if(boot.error)throw boot.error;
-                  }
-                  const admin=await ensureAdmin(); if(!admin)throw new Error('Wannan account ba Admin bane.'); $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;showPage('adminDashboard');"""
-          new="""                  let {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-                  if(error)throw error;
-                  let admin=await ensureAdmin();
-                  if(!admin){
-                      const boot=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0]}});
-                      if(boot.error)throw boot.error;
-                      admin=await ensureAdmin();
-                  }
-                  if(!admin)throw new Error('Wannan account ba Admin bane.');
-                  $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;showPage('adminDashboard');"""
-          if old not in s:
-              raise SystemExit('Expected login block not found; refusing unsafe edit')
-          s=s.replace(old,new,1)
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Verify JavaScript syntax and required IDs
+      - name: Verify complete frontend
         shell: bash
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
           s=Path('index.html').read_text(encoding='utf-8')
-          assert "https://jdjxlfaabzxmwbgxduwr.supabase.co" in s
-          assert "sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-" in s
+          required=[
+            "https://jdjxlfaabzxmwbgxduwr.supabase.co",
+            "sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-",
+            "persistSession: false",
+            "supabaseClient.functions.invoke('register-student'",
+            "supabaseClient.functions.invoke('bootstrap-admin'",
+            "from('students')",
+            "from('codes')",
+            "from('notices')",
+            "from('payments')",
+            "student-passports",
+            "generateCodesForClass",
+            "promoteStudent",
+            "demoteStudent",
+            "openStudentModal",
+            "openAdminFormView",
+            "renderNotices",
+            "startBalloonsAndConfetti",
+            "openLiveCamera"
+          ]
+          for x in required: assert x in s, 'missing required feature: '+x
           for bad in ('localStorage','sessionStorage','__dhMemoryStorage','sb_publishable__XP-1m___1AaPk8gbfCkyA_NA-87Tjw','aobizjaqoctzbmzmpvrz.supabase.co'):
-              assert bad not in s, f'forbidden legacy reference: {bad}'
+            assert bad not in s, 'legacy reference remains: '+bad
           assert "select('student_id,amount,paid_at,status')" in s
           ids=set(re.findall(r'id=[\"\']([^\"\']+)[\"\']',s))
           used=set(re.findall(r"\$\(['\"]([^'\"]+)['\"]\)",s)) | set(re.findall(r"getElementById\(['\"]([^'\"]+)['\"]\)",s))
           missing=sorted(x for x in used if x not in ids)
-          if missing:
-              raise SystemExit('Missing DOM ids: '+', '.join(missing))
-          PY
-          python3 - <<'PY'
-          import re, subprocess, tempfile
-          from pathlib import Path
-          s=Path('index.html').read_text(encoding='utf-8')
+          if missing: raise SystemExit('Missing DOM ids: '+', '.join(missing))
           scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
-          js='\n'.join(x for x in scripts if x.strip())
-          Path('/tmp/index-inline.js').write_text(js,encoding='utf-8')
+          Path('/tmp/index-inline.js').write_text('\n'.join(x for x in scripts if x.strip()),encoding='utf-8')
           PY
           node --check /tmp/index-inline.js
       - name: Commit repaired frontend
@@ -77,12 +67,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Repair Darul Huffaz frontend without restoring legacy storage'
-          git push
-      - name: Remove temporary repair workflow
+          if ! git diff --cached --quiet; then git commit -m 'Finalize Darul Huffaz frontend repairs'; git push; fi
+      - name: Remove temporary workflow
         shell: bash
         run: |
           rm -f .github/workflows/final-repair.yml
-          git add .github/workflows/final-repair.yml
-          git commit -m 'Remove temporary final repair workflow' || true
-          git push || true
+          git add -A
+          if ! git diff --cached --quiet; then git commit -m 'Remove temporary final repair workflow'; git push; fi
