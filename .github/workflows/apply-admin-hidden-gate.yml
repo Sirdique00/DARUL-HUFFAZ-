@@ -1,0 +1,140 @@
+name: Apply admin hidden gate
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-admin-hidden-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='/* DH_HIDDEN_ADMIN_GATE_V1 */'
+          if marker in s:
+              print('Already patched')
+              raise SystemExit(0)
+          code=r'''<script>
+          /* DH_HIDDEN_ADMIN_GATE_V1 */
+          (() => {
+            const GATE_COUNT = 8;
+            let doubleTaps = 0;
+            let lastTap = 0;
+            let gateShown = false;
+            const norm = v => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            const schoolName = 'darul huffaz online academy';
+            function findSchoolNameElement() {
+              const els = document.querySelectorAll('h1,h2,h3,h4,div,p,span,a');
+              for (const el of els) { const t=norm(el.textContent); if (t===schoolName || t.includes(schoolName)) return el; }
+              return null;
+            }
+            function findAdminForm() {
+              for (const form of document.querySelectorAll('form')) {
+                const pw=form.querySelector('input[type="password"]');
+                const email=form.querySelector('input[type="email"], input[name*="email" i], input[id*="email" i]');
+                if (pw && email) return form;
+              }
+              return null;
+            }
+            function hidePinFields(form) {
+              if (!form) return;
+              form.querySelectorAll('input').forEach(el=>{
+                const id=norm(el.id), name=norm(el.getAttribute('name'));
+                if ((id.includes('pin') || name.includes('pin'))) {
+                  el.required=false; el.disabled=true; el.style.display='none';
+                  const parent=el.closest('.form-group,.form-field,.input-group') || el.parentElement;
+                  if(parent) parent.style.display='none';
+                }
+              });
+              form.querySelectorAll('label').forEach(el=>{
+                if(norm(el.textContent).includes('admin pin')) { const p=el.closest('.form-group,.form-field,.input-group')||el.parentElement; if(p)p.style.display='none'; }
+              });
+            }
+            function getPageForForm(form) {
+              let el=form;
+              while(el && el!==document.body){
+                if(el.classList?.contains('page') || /admin|login/i.test(el.id||'')) return el;
+                el=el.parentElement;
+              }
+              return form.closest('[id]')||form;
+            }
+            function showAdminLogin(form) {
+              const page=getPageForForm(form);
+              if(typeof window.showPage==='function' && page?.id){ try{window.showPage(page.id);}catch(_){} }
+              page?.classList?.add('active-page');
+              if(page?.style) page.style.display='block';
+              form?.scrollIntoView({behavior:'smooth',block:'center'});
+              setTimeout(()=>form?.querySelector('input[type="email"],input[name*="email" i],input[id*="email" i]')?.focus(),250);
+            }
+            function makeGate(){
+              if(document.getElementById('dhPinGate')) return document.getElementById('dhPinGate');
+              const wrap=document.createElement('div'); wrap.id='dhPinGate';
+              wrap.innerHTML=`<div class="dh-gate-card" role="dialog" aria-modal="true"><div class="dh-gate-lock">🔐</div><h2>Admin PIN</h2><p>Shigar da Admin PIN sannan ka danna Next.</p><input id="dhGatePin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN" aria-label="Admin PIN"><div id="dhGateError" class="dh-gate-error"></div><button id="dhGateNext" type="button">Next</button></div>`;
+              document.body.appendChild(wrap);
+              const pin=wrap.querySelector('#dhGatePin'), err=wrap.querySelector('#dhGateError'), next=wrap.querySelector('#dhGateNext');
+              const check=async()=>{
+                const value=pin.value.trim(); err.textContent='';
+                if(!/^\d{4,8}$/.test(value)){err.textContent='Shigar da PIN mai lambobi 4 zuwa 8.';pin.focus();return;}
+                next.disabled=true; next.textContent='Ana tantancewa...';
+                try{
+                  const {data,error}=await supabaseClient.functions.invoke('verify-admin-gate',{body:{pin:value}});
+                  if(error || !data?.success) throw new Error(data?.message||error?.message||'PIN ba daidai ba.');
+                  wrap.remove(); gateShown=true; const form=findAdminForm(); hidePinFields(form); if(form)showAdminLogin(form);
+                }catch(e){err.textContent=e?.message||'PIN ba daidai ba.';pin.select();}
+                finally{next.disabled=false;next.textContent='Next';}
+              };
+              next.addEventListener('click',check); pin.addEventListener('keydown',e=>{if(e.key==='Enter')check()}); return wrap;
+            }
+            function showGate(){if(gateShown||document.getElementById('dhPinGate'))return;makeGate().style.display='flex';setTimeout(()=>document.getElementById('dhGatePin')?.focus(),100);}
+            function registerSecretTitleTap(){
+              const el=findSchoolNameElement(); if(!el||el.dataset.dhGateBound)return; el.dataset.dhGateBound='1'; el.style.userSelect='none';
+              el.addEventListener('dblclick',e=>{e.preventDefault();doubleTaps++;if(doubleTaps>=GATE_COUNT)showGate();else{clearTimeout(el._dhReset);el._dhReset=setTimeout(()=>doubleTaps=0,1800)}});
+              el.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')return;const now=Date.now();if(now-lastTap<=420){doubleTaps++;if(doubleTaps>=GATE_COUNT)showGate();clearTimeout(el._dhReset)}else{clearTimeout(el._dhReset);el._dhReset=setTimeout(()=>doubleTaps=0,1800)}lastTap=now});
+            }
+            async function adminLoginOnlyEmailPassword(e){
+              const form=e.target; const emailEl=form.querySelector('input[type="email"],input[name*="email" i],input[id*="email" i]');
+              const passwordEl=form.querySelector('input[type="password"]:not([id*="pin" i]):not([name*="pin" i])'); if(!emailEl||!passwordEl)return;
+              e.preventDefault();e.stopImmediatePropagation();hidePinFields(form);const email=emailEl.value.trim(),password=passwordEl.value;
+              if(!email||!password){alert('Saka Email da Password.');return;} const submit=form.querySelector('button[type="submit"],button');
+              if(submit){submit.disabled=true;submit.dataset.dhOldText=submit.textContent;submit.textContent='Ana shiga...';}
+              try{
+                const {error}=await supabaseClient.auth.signInWithPassword({email,password}); if(error)throw error;
+                const admin=typeof window.ensureAdmin==='function'?await window.ensureAdmin():null; if(!admin){await supabaseClient.auth.signOut();throw new Error('Wannan account ba Admin bane.');}
+                if(typeof window.setupSupabaseRealtime==='function')window.setupSupabaseRealtime(); const welcome=document.getElementById('adminWelcomeUser'); if(welcome)welcome.innerText=`Admin: ${admin.full_name||email}`;
+                if(typeof window.showPage==='function')window.showPage('adminDashboard');else{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active-page'));document.getElementById('adminDashboard')?.classList.add('active-page');}
+              }catch(err){alert(err?.message||'Email ko Password ba daidai ba.');}
+              finally{if(submit){submit.disabled=false;submit.textContent=submit.dataset.dhOldText||'Login';}}
+            }
+            function bindLoginInterceptor(){
+              document.addEventListener('submit',e=>{const form=e.target;if(form?.querySelector('input[type="password"]')&&form?.querySelector('input[type="email"],input[name*="email" i],input[id*="email" i]'))adminLoginOnlyEmailPassword(e)},true);
+              const observer=new MutationObserver(()=>hidePinFields(findAdminForm()));observer.observe(document.body,{subtree:true,childList:true});
+            }
+            function addStyles(){const style=document.createElement('style');style.textContent=`#dhPinGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,44,34,.78);backdrop-filter:blur(7px)}.dh-gate-card{width:min(390px,100%);box-sizing:border-box;background:#fff;border:2px solid #f59e0b;border-radius:20px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.3);text-align:center}.dh-gate-lock{font-size:42px;margin-bottom:6px}.dh-gate-card h2{margin:5px 0 8px;color:#064e3b}.dh-gate-card p{margin:0 0 18px;color:#475569;font-size:14px}.dh-gate-card input{width:100%;box-sizing:border-box;padding:14px;border:1.5px solid #cbd5e1;border-radius:10px;text-align:center;font-size:20px;letter-spacing:5px;outline:none}.dh-gate-card input:focus{border-color:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.15)}.dh-gate-card button{margin-top:14px}.dh-gate-error{min-height:20px;margin-top:8px;color:#dc2626;font-size:13px;font-weight:600}`;document.head.appendChild(style)}
+            function init(){addStyles();registerSecretTitleTap();hidePinFields(findAdminForm());bindLoginInterceptor()}
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+            const retry=setInterval(()=>{registerSecretTitleTap();hidePinFields(findAdminForm())},1000);setTimeout(()=>clearInterval(retry),15000);
+          })();
+          </script>'''
+          pos=s.rfind('</body>')
+          if pos<0: pos=s.rfind('</html>')
+          if pos<0: raise SystemExit('No insertion point')
+          s=s[:pos]+code+'\n'+s[pos:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Add hidden 8-double-tap admin PIN gate'
+          git push
