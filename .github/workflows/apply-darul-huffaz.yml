@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify current Supabase configuration
+      - name: Apply and verify Supabase source of truth
         env:
           SUPABASE_URL: https://jdjxlfaabzxmwbgxduwr.supabase.co
           SUPABASE_KEY: sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-
@@ -24,16 +24,63 @@ jobs:
           s=p.read_text(encoding='utf-8')
           s=re.sub(r"const\s+SUPABASE_URL\s*=\s*['\"][^'\"]+['\"];", "const SUPABASE_URL = '"+os.environ['SUPABASE_URL']+"';", s)
           s=re.sub(r"const\s+SUPABASE_PUBLISHABLE_KEY\s*=\s*['\"][^'\"]+['\"];", "const SUPABASE_PUBLISHABLE_KEY = '"+os.environ['SUPABASE_KEY']+"';", s)
+          realtime = r'''
+          let realtimeChannel = null;
+          let realtimeRefreshTimer = null;
+          function scheduleRealtimeRefresh(){
+              clearTimeout(realtimeRefreshTimer);
+              realtimeRefreshTimer=setTimeout(()=>loadDashboardData(),250);
+          }
+          function setupSupabaseRealtime(){
+              if(realtimeChannel) return realtimeChannel;
+              realtimeChannel=supabaseClient.channel('darul-huffaz-realtime')
+                  .on('postgres_changes',{event:'*',schema:'public',table:'students'},scheduleRealtimeRefresh)
+                  .on('postgres_changes',{event:'*',schema:'public',table:'codes'},scheduleRealtimeRefresh)
+                  .on('postgres_changes',{event:'*',schema:'public',table:'notices'},scheduleRealtimeRefresh)
+                  .on('postgres_changes',{event:'*',schema:'public',table:'payments'},scheduleRealtimeRefresh)
+                  .on('postgres_changes',{event:'*',schema:'public',table:'admin_profiles'},scheduleRealtimeRefresh)
+                  .on('postgres_changes',{event:'*',schema:'public',table:'activity_logs'},scheduleRealtimeRefresh)
+                  .subscribe((status,error)=>{
+                      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+                          console.warn('Supabase Realtime:',error||status);
+                          realtimeChannel=null;
+                          setTimeout(()=>setupSupabaseRealtime(),2000);
+                      }
+                  });
+              return realtimeChannel;
+          }
+          '''
+          if 'function setupSupabaseRealtime()' not in s:
+              marker='          async function loadDashboardData(){'
+              if marker not in s:
+                  raise SystemExit('Realtime insertion anchor missing')
+              s=s.replace(marker,realtime+'\n'+marker,1)
+          s=s.replace("const admin=await ensureAdmin();if(!admin){await supabaseClient.auth.signOut({scope:'local'});return showPage('welcomePage');}","const admin=await ensureAdmin();if(!admin){await supabaseClient.auth.signOut({scope:'local'});return showPage('welcomePage');}setupSupabaseRealtime();",1)
           p.write_text(s,encoding='utf-8')
           PY
           grep -q "const SUPABASE_URL = 'https://jdjxlfaabzxmwbgxduwr.supabase.co';" index.html
           grep -q "const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9s82QdwtrnBiaF-lVyLH1A_N0zTn46-';" index.html
+          grep -q "function setupSupabaseRealtime()" index.html
+          grep -q "table:'students'" index.html
+          grep -q "table:'codes'" index.html
+          grep -q "table:'notices'" index.html
+          grep -q "table:'payments'" index.html
+          grep -q "table:'admin_profiles'" index.html
+          grep -q "table:'activity_logs'" index.html
           if grep -q "sb_publishable__XP-1m___1AaPk8gbfCkyA_NA-87Tjw" index.html; then exit 1; fi
           if grep -nE "localStorage|sessionStorage|__dhMemoryStorage" index.html; then exit 1; fi
+          node --check <(python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          print('\n'.join(scripts))
+          PY
+          )
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Apply current Supabase frontend configuration'
+            git commit -m 'Enable Supabase Realtime source of truth'
             git push
           fi
