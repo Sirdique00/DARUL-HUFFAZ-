@@ -965,9 +965,35 @@
           $('noticeBellWrapper').addEventListener('click',e=>{e.stopPropagation();$('noticeDropdown').classList.toggle('show');});
           window.addEventListener('click',e=>{if($('noticeDropdown').classList.contains('show'))$('noticeDropdown').classList.remove('show');if($('appSidebar').classList.contains('sidebar-open')&&!$('appSidebar').contains(e.target)&&e.target!==$('toggleSidebarBtn'))$('appSidebar').classList.remove('sidebar-open');});
 
+
+let realtimeChannel = null;
+let realtimeRefreshTimer = null;
+function scheduleRealtimeRefresh(){
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer=setTimeout(()=>loadDashboardData(),250);
+}
+function setupSupabaseRealtime(){
+    if(realtimeChannel) return realtimeChannel;
+    realtimeChannel=supabaseClient.channel('darul-huffaz-realtime')
+        .on('postgres_changes',{event:'*',schema:'public',table:'students'},scheduleRealtimeRefresh)
+        .on('postgres_changes',{event:'*',schema:'public',table:'codes'},scheduleRealtimeRefresh)
+        .on('postgres_changes',{event:'*',schema:'public',table:'notices'},scheduleRealtimeRefresh)
+        .on('postgres_changes',{event:'*',schema:'public',table:'payments'},scheduleRealtimeRefresh)
+        .on('postgres_changes',{event:'*',schema:'public',table:'admin_profiles'},scheduleRealtimeRefresh)
+        .on('postgres_changes',{event:'*',schema:'public',table:'activity_logs'},scheduleRealtimeRefresh)
+        .subscribe((status,error)=>{
+            if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+                console.warn('Supabase Realtime:',error||status);
+                realtimeChannel=null;
+                setTimeout(()=>setupSupabaseRealtime(),2000);
+            }
+        });
+    return realtimeChannel;
+}
+
           async function loadDashboardData(){
               try{
-                  const admin=await ensureAdmin();if(!admin){await supabaseClient.auth.signOut({scope:'local'});return showPage('welcomePage');}
+                  const admin=await ensureAdmin();if(!admin){await supabaseClient.auth.signOut({scope:'local'});return showPage('welcomePage');}setupSupabaseRealtime();
                   await Promise.all([getStudents(),getCodes(),getNotices()]);
                   const payments=await supabaseClient.from('payments').select('student_id,amount,paid_at,status').eq('status','paid'); if(payments.error)throw payments.error;
                   const total=(payments.data||[]).reduce((a,p)=>a+Number(p.amount||0),0);
