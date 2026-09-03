@@ -1,0 +1,146 @@
+name: Fix real admin gate
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-real-admin-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace admin gate
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='/* DH_HIDDEN_ADMIN_GATE_V1 */'
+          start=s.find(marker)
+          if start < 0:
+              raise SystemExit('Hidden gate marker not found')
+          script_start=s.rfind('<script>',0,start)
+          script_end=s.find('</script>',start)
+          if script_start < 0 or script_end < 0:
+              raise SystemExit('Gate script boundaries not found')
+          code=r'''<script>
+          /* DH_HIDDEN_ADMIN_GATE_V2 */
+          (() => {
+            const REQUIRED_DOUBLES = 8;
+            let doubles = 0;
+            let lastTouch = 0;
+            let resetTimer = null;
+            let opened = false;
+            const schoolName = 'darul huffaz online academy';
+            const norm = v => String(v || '').replace(/\s+/g,' ').trim().toLowerCase();
+            function findSchoolTitle(){
+              for(const el of document.querySelectorAll('h1,h2,h3,h4,div,p,span,a')){
+                if(norm(el.textContent).includes(schoolName)) return el;
+              }
+              return null;
+            }
+            function reset(){ doubles=0; lastTouch=0; clearTimeout(resetTimer); }
+            function scheduleReset(){ clearTimeout(resetTimer); resetTimer=setTimeout(reset,1800); }
+            function addStyles(){
+              if(document.getElementById('dhGateStyles')) return;
+              const st=document.createElement('style'); st.id='dhGateStyles';
+              st.textContent=`#dhPinGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,44,34,.86);backdrop-filter:blur(8px)}.dh-gate-card{width:min(390px,100%);box-sizing:border-box;background:#fff;border:2px solid #f59e0b;border-radius:20px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.35);text-align:center}.dh-gate-card h2{margin:6px 0 8px;color:#064e3b}.dh-gate-card p{margin:0 0 18px;color:#475569;font-size:14px}.dh-gate-card input{width:100%;box-sizing:border-box;padding:14px;border:1.5px solid #cbd5e1;border-radius:10px;text-align:center;font-size:20px;letter-spacing:5px}.dh-gate-card button{margin-top:14px}.dh-gate-error{min-height:20px;margin-top:8px;color:#dc2626;font-size:13px;font-weight:700}`;
+              document.head.appendChild(st);
+            }
+            function showGate(){
+              if(opened || document.getElementById('dhPinGate')) return;
+              opened=true;
+              addStyles();
+              const wrap=document.createElement('div'); wrap.id='dhPinGate';
+              wrap.innerHTML='<div class="dh-gate-card" role="dialog" aria-modal="true"><div style="font-size:42px">🔐</div><h2>Admin PIN</h2><p>Shigar da PIN ɗin Admin sannan ka danna Next.</p><input id="dhGatePin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN"><div id="dhGateError" class="dh-gate-error"></div><button id="dhGateNext" type="button">Next</button></div>';
+              document.body.appendChild(wrap);
+              const pin=wrap.querySelector('#dhGatePin'), err=wrap.querySelector('#dhGateError'), next=wrap.querySelector('#dhGateNext');
+              const check=async()=>{
+                const value=String(pin.value||'').trim();
+                err.textContent='';
+                if(!/^\d{4,8}$/.test(value)){ err.textContent='PIN dole ya kasance lambobi 4 zuwa 8.'; pin.focus(); return; }
+                next.disabled=true; next.textContent='Ana tantance PIN...';
+                try{
+                  const result=await supabaseClient.functions.invoke('verify-admin-gate',{body:{pin:value}});
+                  const data=result?.data;
+                  if(data?.success !== true){ throw new Error('PIN ba daidai ba.'); }
+                  wrap.remove();
+                  gateApproved=true;
+                  revealLogin();
+                }catch(e){
+                  err.textContent='PIN ba daidai ba. Ba a bude Login ba.';
+                  pin.select();
+                }finally{ next.disabled=false; next.textContent='Next'; }
+              };
+              next.addEventListener('click',check);
+              pin.addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+              setTimeout(()=>pin.focus(),80);
+            }
+            let gateApproved=false;
+            function getLoginForm(){
+              for(const form of document.querySelectorAll('form')){
+                const email=form.querySelector('input[type="email"],input[name*="email" i],input[id*="email" i]');
+                const pw=form.querySelector('input[type="password"]:not([id*="pin" i]):not([name*="pin" i])');
+                if(email&&pw) return form;
+              }
+              return null;
+            }
+            function hideLogin(){
+              const form=getLoginForm(); if(!form) return;
+              const page=form.closest('.page')||form.parentElement;
+              if(page && page.id!=='welcomePage') page.style.display='none';
+              form.style.visibility='hidden';
+            }
+            function revealLogin(){
+              const form=getLoginForm();
+              if(!form) return;
+              const page=form.closest('.page')||form.parentElement;
+              if(typeof window.showPage==='function' && page?.id) { try{window.showPage(page.id);}catch(_){} }
+              if(page) page.style.display='block';
+              form.style.visibility='visible';
+              form.querySelector('input[type="email"],input[name*="email" i],input[id*="email" i]')?.focus();
+            }
+            function bind(){
+              const el=findSchoolTitle();
+              if(!el || el.dataset.dhGateV2) return;
+              el.dataset.dhGateV2='1'; el.style.userSelect='none';
+              el.addEventListener('dblclick',e=>{e.preventDefault();doubles++;if(doubles>=REQUIRED_DOUBLES){reset();showGate();}else scheduleReset();});
+              el.addEventListener('pointerup',e=>{
+                if(e.pointerType!=='touch') return;
+                const now=Date.now();
+                if(now-lastTouch<=450){
+                  doubles++;
+                  if(doubles>=REQUIRED_DOUBLES){reset();showGate();} else scheduleReset();
+                }else scheduleReset();
+                lastTouch=now;
+              });
+            }
+            function protectLogin(){
+              if(!gateApproved) hideLogin();
+            }
+            function init(){ bind(); protectLogin(); }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+            const observer=new MutationObserver(()=>{bind();protectLogin();});
+            observer.observe(document.body,{subtree:true,childList:true});
+            setInterval(bind,1000);
+          })();
+          </script>'''
+          s=s[:script_start]+code+s[script_end+9:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Verify
+        run: |
+          grep -q 'DH_HIDDEN_ADMIN_GATE_V2' index.html
+          grep -q "verify-admin-gate" index.html
+          test "$(grep -o 'DH_HIDDEN_ADMIN_GATE_V' index.html | wc -l)" = "1"
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Make admin PIN gate validate exact Supabase PIN'
+          git push
