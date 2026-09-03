@@ -1,0 +1,105 @@
+name: Repair Darul Huffaz Admin Auth
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repair admin auth placement
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='/* DH_SUPABASE_ADMIN_AUTH_V1 */'
+          idx=s.find(marker)
+          if idx>=0:
+              start=s.rfind('<script',0,idx)
+              tag_end=s.find('>',start)
+              close=s.find('</script>',idx)
+              if start>=0 and tag_end>=0 and close>=0 and 'src=' in s[start:tag_end+1]:
+                  s=s[:start]+s[start:tag_end+1]+s[close+9:]
+          if marker in s:
+              raise SystemExit('marker still present before repair')
+          inject=r'''/* DH_SUPABASE_ADMIN_AUTH_V1 */
+          (()=>{
+              const login=$('loginPage');
+              if(!login)return;
+              const pass=$('adminPass');
+              if(!pass)return;
+              const pinWrap=document.createElement('div');
+              pinWrap.className='form-group';
+              pinWrap.innerHTML='<label>Admin PIN *</label><input type="password" id="adminLoginPin" inputmode="numeric" maxlength="8" placeholder="4–8 digit PIN" autocomplete="off">';
+              pass.parentNode.insertAdjacentElement('afterend',pinWrap);
+              $('adminUser').previousElementSibling.innerText='Username / Admin Email *';
+              $('adminUser').placeholder='admin@example.com';
+              const oldBtn=$('verifyLoginBtn');
+              const btn=oldBtn.cloneNode(true);
+              oldBtn.replaceWith(btn);
+              btn.addEventListener('click',async()=>{
+                  const email=$('adminUser').value.trim().toLowerCase();
+                  const password=$('adminPass').value;
+                  const pin=$('adminLoginPin').value.trim();
+                  if(!email||!password||!pin)return alert('Sanya Username/Email, Password da PIN.');
+                  if(!/^\d{4,8}$/.test(pin))return alert('PIN dole ya zama lambobi 4 zuwa 8.');
+                  btn.disabled=true;btn.innerText='Ana tabbatarwa...';
+                  try{
+                      let {error}=await supabaseClient.auth.signInWithPassword({email,password});
+                      if(error){
+                          const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
+                          if(sign.error)throw error;
+                          if(!sign.data.session){
+                              alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka dawo ka Login da wannan Username, Password da PIN.');
+                              return;
+                          }
+                      }
+                      const vp=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
+                      if(vp.error||!vp.data?.success){
+                          const b=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
+                          if(b.error||!b.data?.success)throw new Error('PIN din ba daidai ba ko wannan account ba Admin bane.');
+                      }
+                      const admin=await ensureAdmin();
+                      if(!admin)throw new Error('Wannan account ba Admin bane.');
+                      $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;
+                      setupSupabaseRealtime();
+                      showPage('adminDashboard');
+                  }catch(err){
+                      console.error(err);
+                      await supabaseClient.auth.signOut({scope:'local'}).catch(()=>{});
+                      alert('Login ya kasa: '+(err.message||err));
+                  }finally{
+                      btn.disabled=false;btn.innerText='Login ➔';
+                  }
+              });
+              $('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
+              $('adminLoginPin').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
+          })();
+          '''
+          head,tail=s.rsplit('</script>',1)
+          s=head+inject+'\n</script>'+tail
+          p.write_text(s,encoding='utf-8')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
+          Path('/tmp/darul-huffaz-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/darul-huffaz-inline.js
+          grep -q "DH_SUPABASE_ADMIN_AUTH_V1" index.html
+          grep -q "verify-admin-pin" index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Repair Supabase admin auth placement'
+            git push
+          fi
