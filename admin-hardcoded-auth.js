@@ -1,0 +1,180 @@
+/* DARUL HUFFAZ — CLEAN SUPABASE ADMIN AUTH V1 */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let busy = false;
+
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  const message = text => alert(text);
+
+  function page(name) {
+    if (typeof showPage === 'function') return showPage(name);
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active-page'));
+    const target = $(name);
+    if (target) target.classList.add('active-page');
+  }
+
+  function setBusy(button, value, label) {
+    if (!button) return;
+    button.disabled = value;
+    if (value) {
+      button.dataset.oldText = button.innerText;
+      button.innerText = label;
+    } else {
+      button.innerText = button.dataset.oldText || button.innerText;
+    }
+  }
+
+  function renderLogin() {
+    const root = $('loginPage');
+    if (!root) return;
+    root.innerHTML = `
+      <div class="auth-container" style="max-width:520px">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:42px">🔐</div>
+          <h2 style="margin:8px 0 5px">Admin Login</h2>
+          <p style="margin:0;color:#64748b;font-size:13px">DARUL HUFFAZ ONLINE ACADEMY</p>
+        </div>
+        <form id="dhAdminLoginForm" autocomplete="on">
+          <div class="form-group">
+            <label for="dhAdminEmail">Admin Email</label>
+            <input id="dhAdminEmail" type="email" autocomplete="username" placeholder="admin@example.com" required>
+          </div>
+          <div class="form-group">
+            <label for="dhAdminPassword">Password</label>
+            <input id="dhAdminPassword" type="password" autocomplete="current-password" placeholder="Admin password" required>
+          </div>
+          <div class="form-group">
+            <label for="dhAdminPin">6-Digit Admin PIN</label>
+            <input id="dhAdminPin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="••••••" required>
+          </div>
+          <button id="dhAdminLoginBtn" type="submit">Login to Dashboard ➜</button>
+        </form>
+        <div id="dhAuthStatus" style="margin-top:14px;text-align:center;font-size:12px;color:#64748b"></div>
+      </div>`;
+    $('dhAdminLoginForm').addEventListener('submit', login);
+  }
+
+  function renderSetup() {
+    const root = $('loginPage');
+    if (!root) return;
+    root.innerHTML = `
+      <div class="auth-container" style="max-width:560px">
+        <div style="text-align:center;margin-bottom:22px">
+          <div style="font-size:42px">🛡️</div>
+          <h2 style="margin:8px 0 5px">First Admin Setup</h2>
+          <p style="margin:0;color:#64748b;font-size:13px">An share sabon tsarin tsaro na Supabase. Wannan setup sau daya ne kawai.</p>
+        </div>
+        <form id="dhAdminSetupForm" autocomplete="off">
+          <div class="form-group">
+            <label for="dhSetupToken">One-Time Setup Key</label>
+            <input id="dhSetupToken" type="password" autocomplete="off" placeholder="Sanya one-time setup key" required>
+            <small style="display:block;margin-top:5px;color:#64748b">Ana amfani da wannan key sau daya kawai wajen kafa admin na farko.</small>
+          </div>
+          <div class="form-group">
+            <label for="dhSetupName">Admin Full Name</label>
+            <input id="dhSetupName" type="text" maxlength="120" placeholder="Administrator" required>
+          </div>
+          <div class="form-group">
+            <label for="dhSetupEmail">First Admin Email</label>
+            <input id="dhSetupEmail" type="email" autocomplete="email" placeholder="admin@example.com" required>
+          </div>
+          <div class="form-group">
+            <label for="dhSetupPassword">First Admin Password</label>
+            <input id="dhSetupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required>
+          </div>
+          <div class="form-group">
+            <label for="dhSetupPin">First Admin PIN</label>
+            <input id="dhSetupPin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="new-password" placeholder="6 digits" required>
+          </div>
+          <div class="form-group">
+            <label for="dhSetupPin2">Confirm Admin PIN</label>
+            <input id="dhSetupPin2" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="new-password" placeholder="Repeat 6 digits" required>
+          </div>
+          <button id="dhAdminSetupBtn" type="submit">Create First Admin & Continue ➜</button>
+        </form>
+        <div style="margin-top:14px;padding:10px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;text-align:center">Email + Password + PIN duk suna aiki tare. Babu hard-coded credential a website.</div>
+      </div>`;
+    $('dhAdminSetupForm').addEventListener('submit', setup);
+  }
+
+  async function status() {
+    if (!window.supabaseClient) throw new Error('Supabase client bai shirya ba.');
+    const { data, error } = await supabaseClient.functions.invoke('bootstrap-admin', { body: { action:'status' } });
+    if (error) throw error;
+    return !!data?.configured;
+  }
+
+  async function applySession(session, adminName) {
+    if (!session?.access_token || !session?.refresh_token) throw new Error('No valid Supabase session returned.');
+    const { error } = await supabaseClient.auth.setSession(session);
+    if (error) throw error;
+    page('adminDashboard');
+    if (typeof loadDashboardData === 'function') await loadDashboardData();
+    if (adminName) console.info('DARUL HUFFAZ admin authenticated:', adminName);
+  }
+
+  async function login(event) {
+    event.preventDefault();
+    if (busy) return;
+    const email = String($('dhAdminEmail')?.value || '').trim().toLowerCase();
+    const password = String($('dhAdminPassword')?.value || '');
+    const pin = String($('dhAdminPin')?.value || '').trim();
+    if (!email || !password || !/^\d{6}$/.test(pin)) return message('Sanya Admin Email, Password da PIN mai lambobi 6.');
+    busy = true;
+    const btn = $('dhAdminLoginBtn'); setBusy(btn, true, 'Ana shiga Dashboard...');
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('admin-hardcoded-login', { body:{ email, password, pin } });
+      if (error) throw error;
+      if (!data?.success || !data?.session) throw new Error(data?.error || 'ADMIN_LOGIN_FAILED');
+      await applySession(data.session, data.admin?.full_name);
+    } catch (e) {
+      console.error(e);
+      message('An kasa shiga Admin: ' + (e?.message || e));
+    } finally { busy = false; setBusy(btn, false); }
+  }
+
+  async function setup(event) {
+    event.preventDefault();
+    if (busy) return;
+    const setupToken = String($('dhSetupToken')?.value || '').trim();
+    const fullName = String($('dhSetupName')?.value || '').trim();
+    const email = String($('dhSetupEmail')?.value || '').trim().toLowerCase();
+    const password = String($('dhSetupPassword')?.value || '');
+    const pin = String($('dhSetupPin')?.value || '').trim();
+    const pin2 = String($('dhSetupPin2')?.value || '').trim();
+    if (!setupToken || !fullName || !email || password.length < 8 || !/^\d{6}$/.test(pin) || pin !== pin2) return message('Duba setup key, email, password, da PIN. PIN biyu dole su zama iri daya.');
+    busy = true;
+    const btn = $('dhAdminSetupBtn'); setBusy(btn, true, 'Ana kafa First Admin...');
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('bootstrap-admin', { body:{ setupToken, fullName, email, password, pin } });
+      if (error) throw error;
+      if (!data?.success || !data?.session) throw new Error(data?.error || 'ADMIN_BOOTSTRAP_FAILED');
+      await applySession(data.session, data.admin?.full_name);
+      message('✅ First Admin an kafa successfully. Admin login yanzu yana aiki.');
+    } catch (e) {
+      console.error(e);
+      message('An kasa kafa First Admin: ' + (e?.message || e));
+    } finally { busy = false; setBusy(btn, false); }
+  }
+
+  async function boot() {
+    if (!window.supabaseClient) return setTimeout(boot, 250);
+    try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      if (sessionData?.session?.access_token) {
+        const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+        if (!userError && userData?.user) { page('adminDashboard'); if (typeof loadDashboardData === 'function') await loadDashboardData(); return; }
+        await supabaseClient.auth.signOut();
+      }
+      const configured = await status();
+      if (configured) renderLogin(); else renderSetup();
+    } catch (e) {
+      console.error(e);
+      renderLogin();
+      const note = $('dhAuthStatus'); if (note) note.textContent = 'Supabase auth status ba samu ba. Sake loda shafin.';
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
