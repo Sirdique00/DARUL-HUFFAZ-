@@ -14,32 +14,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject admin auth controller
+      - name: Clean old embedded auth and wire current controller
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
+
+          # Remove the obsolete embedded admin-auth IIFE only.
+          s = re.sub(r'/\*\s*DH_SUPABASE_ADMIN_AUTH_V1\s*\*/.*?\n\s*\}\)\(\);', '', s, count=1, flags=re.S)
+          # Remove any previous external controller tag so it is inserted once.
+          s = re.sub(r'\s*<script\s+src=["\']admin-hardcoded-auth\.js["\']\s*></script>', '', s, flags=re.I)
+
           tag = '<script src="admin-hardcoded-auth.js"></script>'
-          if tag not in s:
-              marker = '<script src="code-generator.js"></script>'
-              if marker in s:
-                  s = s.replace(marker, tag + '\n' + marker, 1)
-              else:
-                  s = s.replace('</body>', tag + '\n</body>', 1)
-              p.write_text(s, encoding='utf-8')
+          marker = '<script src="code-generator.js"></script>'
+          if marker in s:
+              s = s.replace(marker, tag + '\n' + marker, 1)
+          else:
+              s = s.replace('</body>', tag + '\n</body>', 1)
+          p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Commit injected script tag
+      - name: Commit cleaned wiring
         shell: bash
         run: |
           if git diff --quiet -- index.html; then
-            echo "Admin auth script already wired."
+            echo "Admin auth wiring is already clean."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Wire hardcoded admin auth controller"
+          git commit -m "Clean old admin auth and wire V5 controller"
           git push
