@@ -1,4 +1,4 @@
-/* DH_HARDCODED_ADMIN_AUTH_V2 */
+/* DH_HARDCODED_ADMIN_AUTH_V3 */
 (() => {
   'use strict';
   const USERNAME = 'Sirdique';
@@ -30,7 +30,7 @@
     const title = $('loginPage')?.querySelector('h2');
     if (title) title.textContent = 'Admin Login — Verified';
     const noteId = 'dhAdminCredentialNote';
-    if (!$ (noteId)) {
+    if (!$(noteId)) {
       const note = document.createElement('div');
       note.id = noteId;
       note.style.cssText = 'margin:10px 0;padding:12px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:13px;line-height:1.5;text-align:center;font-weight:700';
@@ -45,7 +45,7 @@
     e.stopImmediatePropagation();
     if (busy) return;
     const pin = String($('adminPin')?.value || '').trim();
-    if (!/^\d{6}$/.test(pin)) return showError('PIN dole ya zama lambobi 6.');
+    if (pin !== PIN) return showError('PIN ba daidai ba.');
     busy = true;
     const btn = $('verifyPinBtn');
     const old = btn?.innerText;
