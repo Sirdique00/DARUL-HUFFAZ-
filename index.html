@@ -4,81 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DARUL HUFFAZ ONLINE ACADEMY</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">/* DH_SUPABASE_ADMIN_AUTH_V1 */
-(()=>{
-    const login=$('loginPage');
-    if(!login)return;
-    const pass=$('adminPass');
-    if(!pass)return;
-    const pinWrap=document.createElement('div');
-    pinWrap.className='form-group';
-    pinWrap.innerHTML='<label>Admin PIN *</label><input type="password" id="adminLoginPin" inputmode="numeric" maxlength="8" placeholder="4–8 digit PIN" autocomplete="off">';
-    pass.parentNode.insertAdjacentElement('afterend',pinWrap);
-    const userLabel=$('adminUser').previousElementSibling;
-    userLabel.innerText='Username / Admin Email *';
-    $('adminUser').placeholder='admin@example.com';
-    const oldBtn=$('verifyLoginBtn');
-    const btn=oldBtn.cloneNode(true);
-    oldBtn.replaceWith(btn);
-    async function verifyPin(){
-        const pin=$('adminLoginPin').value.trim();
-        if(!/^\d{4,8}$/.test(pin))throw new Error('PIN dole ya zama lambobi 4 zuwa 8.');
-        const r=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
-        if(r.error)throw r.error;
-        if(!r.data?.success)throw new Error(r.data?.error||'INVALID_PIN');
-    }
-    async function bootstrap(email,password,pin){
-        const r=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
-        if(r.error)throw r.error;
-        if(!r.data?.success)throw new Error(r.data?.error||'BOOTSTRAP_FAILED');
-    }
-    btn.addEventListener('click',async()=>{
-        const email=$('adminUser').value.trim().toLowerCase();
-        const password=$('adminPass').value;
-        const pin=$('adminLoginPin').value.trim();
-        if(!email||!password||!pin)return alert('Sanya Username/Email, Password da PIN.');
-        if(!/^\d{4,8}$/.test(pin))return alert('PIN dole ya zama lambobi 4 zuwa 8.');
-        btn.disabled=true;btn.innerText='Ana tabbatarwa...';
-        try{
-            let signedIn=false;
-            let {error}=await supabaseClient.auth.signInWithPassword({email,password});
-            if(!error){
-                signedIn=true;
-            }else{
-                const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
-                if(sign.error)throw error;
-                if(!sign.data.session){
-                    alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka dawo ka Login da wannan Username, Password da PIN.');
-                    return;
-                }
-                signedIn=true;
-            }
-            if(!signedIn)throw new Error('LOGIN_FAILED');
-            let pinOk=true;
-            const vp=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
-            if(vp.error||!vp.data?.success)pinOk=false;
-            if(!pinOk){
-                const b=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
-                if(b.error||!b.data?.success)throw new Error('PIN din ba daidai ba ko wannan account ba Admin bane.');
-            }
-            const admin=await ensureAdmin();
-            if(!admin)throw new Error('Wannan account ba Admin bane.');
-            $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;
-            setupSupabaseRealtime();
-            showPage('adminDashboard');
-        }catch(err){
-            console.error(err);
-            await supabaseClient.auth.signOut({scope:'local'}).catch(()=>{});
-            alert('Login ya kasa: '+(err.message||err));
-        }finally{
-            btn.disabled=false;btn.innerText='Login ➔';
-        }
-    });
-    $('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
-    $('adminLoginPin').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
-})();
-
-</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -1110,6 +1036,61 @@ function setupSupabaseRealtime(){
           supabaseClient.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){showPage('welcomePage');}});
           document.querySelectorAll('.form-filter-btn').forEach((b,i)=>{if(i===0){b.style.background='var(--primary)';b.style.color='var(--accent)';}});
           $('adminUser').previousElementSibling.innerText='Admin Email *';$('adminUser').placeholder='admin@example.com';$('adminPass').previousElementSibling.innerText='Password *';$('verifyPinBtn').innerText='Continue to Admin Login ➔';$('pinPage').querySelector('h2').innerText='Admin Access';$('pinPage').querySelector('label').innerText='PIN removed — Supabase Auth protects the dashboard';
-          </script>
+          /* DH_SUPABASE_ADMIN_AUTH_V1 */
+(()=>{
+    const login=$('loginPage');
+    if(!login)return;
+    const pass=$('adminPass');
+    if(!pass)return;
+    if($('adminLoginPin'))return;
+    const pinWrap=document.createElement('div');
+    pinWrap.className='form-group';
+    pinWrap.innerHTML='<label>Admin PIN *</label><input type="password" id="adminLoginPin" inputmode="numeric" maxlength="8" placeholder="4–8 digit PIN" autocomplete="off">';
+    pass.parentNode.insertAdjacentElement('afterend',pinWrap);
+    $('adminUser').previousElementSibling.innerText='Username / Admin Email *';
+    $('adminUser').placeholder='admin@example.com';
+    const oldBtn=$('verifyLoginBtn');
+    const btn=oldBtn.cloneNode(true);
+    oldBtn.replaceWith(btn);
+    btn.addEventListener('click',async()=>{
+        const email=$('adminUser').value.trim().toLowerCase();
+        const password=$('adminPass').value;
+        const pin=$('adminLoginPin').value.trim();
+        if(!email||!password||!pin)return alert('Sanya Username/Email, Password da PIN.');
+        if(!/^\d{4,8}$/.test(pin))return alert('PIN dole ya zama lambobi 4 zuwa 8.');
+        btn.disabled=true;btn.innerText='Ana tabbatarwa...';
+        try{
+            let {error}=await supabaseClient.auth.signInWithPassword({email,password});
+            if(error){
+                const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
+                if(sign.error)throw error;
+                if(!sign.data.session){
+                    alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka dawo ka Login da wannan Username, Password da PIN.');
+                    return;
+                }
+            }
+            const vp=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
+            if(vp.error||!vp.data?.success){
+                const b=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
+                if(b.error||!b.data?.success)throw new Error('PIN din ba daidai ba ko wannan account ba Admin bane.');
+            }
+            const admin=await ensureAdmin();
+            if(!admin)throw new Error('Wannan account ba Admin bane.');
+            $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;
+            setupSupabaseRealtime();
+            showPage('adminDashboard');
+        }catch(err){
+            console.error(err);
+            await supabaseClient.auth.signOut({scope:'local'}).catch(()=>{});
+            alert('Login ya kasa: '+(err.message||err));
+        }finally{
+            btn.disabled=false;btn.innerText='Login ➔';
+        }
+    });
+    $('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
+    $('adminLoginPin').addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
+})();
+
+</script>
 </body>
 </html>
