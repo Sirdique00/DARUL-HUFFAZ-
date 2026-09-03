@@ -1,4 +1,4 @@
-name: Fix hidden admin gate to direct login
+name: Finalize hidden admin access
 on:
   push:
     paths:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply direct Login gate
+      - name: Remove all old PIN login/gate code and install final gate
         run: |
           python3 <<'PY'
           from pathlib import Path
@@ -19,20 +19,66 @@ jobs:
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
 
-          # Remove any previous hidden-gate script so only one gate exists.
+          # Remove every previous hidden-admin gate script.
           s=re.sub(r'<script>\s*/\*\s*DH_HIDDEN_ADMIN_GATE_[^*]*\*/.*?</script>\s*', '', s, flags=re.S)
 
-          # Remove the old standalone PIN page if it still exists.
+          # Remove the standalone PIN page completely.
           s=re.sub(r'<!-- 6\. ADMIN PIN & LOGIN PAGES -->\s*<div id="pinPage".*?</div>\s*\n\s*<div id="loginPage"', '<!-- 6. ADMIN LOGIN PAGE -->\n<div id="loginPage"', s, count=1, flags=re.S)
-          s=s.replace('<div class="form-group"><label>Username *</label><input type="text" id="adminUser" placeholder="Username"></div>', '<div class="form-group"><label>Email Address *</label><input type="email" id="adminUser" autocomplete="username" placeholder="admin@example.com"></div>')
-          s=s.replace("function handleLoginBack(){ $('adminUser').value=''; $('adminPass').value=''; showPage('pinPage'); }", "function handleLoginBack(){ $('adminUser').value=''; $('adminPass').value=''; showPage('welcomePage'); }")
-          s=s.replace("function handlePinBack(){ $('adminPin').value=''; showPage('welcomePage'); }", "")
+          if 'id="pinPage"' in s:
+              s=re.sub(r'<div id="pinPage".*?</div>\s*(?=<div id="loginPage")', '', s, count=1, flags=re.S)
 
-          # Remove old direct PIN verification handler if present.
-          s=re.sub(r"\s*\$\('verifyPinBtn'\)\.addEventListener\([^;]*;", '', s, count=1, flags=re.S)
+          # Make the login form email + password only.
+          s=re.sub(r'<div class="form-group"><label>Username \*</label><input type="text" id="adminUser" placeholder="Username"></div>', '<div class="form-group"><label>Admin Email *</label><input type="email" id="adminUser" autocomplete="username" placeholder="admin@example.com"></div>', s, count=1)
+          s=re.sub(r'<div class="form-group"><label>Username / Admin Email \*</label><input type="text" id="adminUser"[^>]*></div>', '<div class="form-group"><label>Admin Email *</label><input type="email" id="adminUser" autocomplete="username" placeholder="admin@example.com"></div>', s, count=1)
+          s=s.replace("function handleLoginBack(){ $('adminUser').value=''; $('adminPass').value=''; showPage('pinPage'); }", "function handleLoginBack(){ $('adminUser').value=''; $('adminPass').value=''; showPage('welcomePage'); }")
+          s=re.sub(r'\s*function handlePinBack\(\)\{.*?\}\s*', '\n', s, count=1, flags=re.S)
+
+          # Remove old PIN button handler and old PIN-related UI manipulation.
+          s=re.sub(r"\s*\$\('verifyPinBtn'\)\.addEventListener\(.*?\);", '', s, count=1, flags=re.S)
+          s=re.sub(r"\s*\$\('adminUser'\)\.previousElementSibling\.innerText='Username / Admin Email \*';\$\('adminUser'\)\.placeholder='admin@example\.com';\$\('adminPass'\)\.previousElementSibling\.innerText='Password \*';\$\('verifyPinBtn'\)\.innerText=.*?;\$\('pinPage'\).*?;", '', s, count=1, flags=re.S)
+
+          # Remove the old PIN-auth injector script entirely.
+          s=re.sub(r'<script>\s*/\*\s*DH_SUPABASE_ADMIN_AUTH_V1\s*\*/.*?</script>\s*', '', s, flags=re.S)
+
+          # Replace the main login handler with a clean email/password-only flow.
+          login=r'''          $('verifyLoginBtn').addEventListener('click',async()=>{
+              const email=$('adminUser').value.trim().toLowerCase();
+              const password=$('adminPass').value;
+              if(!email||!password)return alert('Sanya Admin Email da Password.');
+              const btn=$('verifyLoginBtn'); btn.disabled=true; btn.innerText='Ana tabbatarwa...';
+              try{
+                  let {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+                  if(error){
+                      const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
+                      if(sign.error)throw error;
+                      if(!sign.data.session){
+                          alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka dawo ka Login.');
+                          return;
+                      }
+                      const boot=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0]}});
+                      if(boot.error||!boot.data?.success)throw new Error(boot.data?.error||boot.error?.message||'ADMIN_SETUP_FAILED');
+                  }
+                  const admin=await ensureAdmin();
+                  if(!admin)throw new Error('Wannan account ba Admin bane.');
+                  $('adminWelcomeUser').innerText=`Admin: ${admin.full_name}`;
+                  setupSupabaseRealtime();
+                  showPage('adminDashboard');
+              }catch(err){
+                  console.error(err);
+                  await supabaseClient.auth.signOut({scope:'local'}).catch(()=>{});
+                  alert('Login ya kasa: '+(err.message||err));
+              }finally{btn.disabled=false;btn.innerText='Login ➔';}
+          });
+          '''
+          s=re.sub(r"\s*\$\('verifyLoginBtn'\)\.addEventListener\('click',async\(\)=>\{.*?\n\s*\}\);", '\n'+login, s, count=1, flags=re.S)
+
+          # Remove any remaining PIN identifiers/calls from the page/script.
+          s=re.sub(r"\n?\s*\$\('verifyPinBtn'\)[^\n]*", '', s)
+          s=re.sub(r"\n?\s*\$\('pinPage'\)[^\n]*", '', s)
+          s=re.sub(r"\n?\s*\$\('adminPin'\)[^\n]*", '', s)
 
           gate=r'''<script>
-          /* DH_HIDDEN_ADMIN_GATE_V3_DIRECT_LOGIN */
+          /* DH_HIDDEN_ADMIN_GATE_FINAL */
           (() => {
             const REQUIRED_DOUBLES = 8;
             let doubles = 0;
@@ -42,7 +88,6 @@ jobs:
             let gateApproved = false;
             const schoolName = 'darul huffaz online academy';
             const norm = v => String(v || '').replace(/\s+/g,' ').trim().toLowerCase();
-
             function findSchoolTitle(){
               for(const el of document.querySelectorAll('h1,h2,h3,h4,div,p,span,a')){
                 if(norm(el.textContent).includes(schoolName)) return el;
@@ -51,66 +96,64 @@ jobs:
             }
             function reset(){ doubles=0; lastTouch=0; clearTimeout(resetTimer); }
             function scheduleReset(){ clearTimeout(resetTimer); resetTimer=setTimeout(reset,1800); }
-            function getLoginPage(){ return document.getElementById('loginPage'); }
-            function hideLogin(){ const page=getLoginPage(); if(page && !gateApproved) page.style.display='none'; }
+            function hideLogin(){ const page=document.getElementById('loginPage'); if(page && !gateApproved) page.style.display='none'; }
             function revealLogin(){
-              const page=getLoginPage();
-              if(!page) return;
+              const page=document.getElementById('loginPage');
+              if(!page)return;
               gateApproved=true;
               page.style.display='block';
               page.classList.add('active-page');
-              const email=document.getElementById('adminUser');
-              if(email) setTimeout(()=>email.focus(),80);
+              setTimeout(()=>document.getElementById('adminUser')?.focus(),80);
             }
-            function showDirectLogin(){ if(opened) return; opened=true; reset(); revealLogin(); }
-
+            function openLogin(){ if(opened)return; opened=true; reset(); revealLogin(); }
             function bind(){
               const el=findSchoolTitle();
-              if(!el || el.dataset.dhGateV3) return;
-              el.dataset.dhGateV3='1';
+              if(!el || el.dataset.dhFinalGate)return;
+              el.dataset.dhFinalGate='1';
               el.style.userSelect='none';
               el.style.webkitUserSelect='none';
               el.addEventListener('dblclick',e=>{
                 e.preventDefault();
                 doubles++;
-                if(doubles>=REQUIRED_DOUBLES) showDirectLogin();
-                else scheduleReset();
+                if(doubles>=REQUIRED_DOUBLES)openLogin(); else scheduleReset();
               });
               el.addEventListener('pointerup',e=>{
-                if(e.pointerType!=='touch') return;
+                if(e.pointerType!=='touch')return;
                 const now=Date.now();
                 if(now-lastTouch<=450){
                   doubles++;
-                  if(doubles>=REQUIRED_DOUBLES) showDirectLogin();
-                  else scheduleReset();
+                  if(doubles>=REQUIRED_DOUBLES)openLogin(); else scheduleReset();
                 }else scheduleReset();
                 lastTouch=now;
               });
             }
-            function init(){ bind(); hideLogin(); }
-            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-            const observer=new MutationObserver(()=>{ bind(); if(!gateApproved) hideLogin(); });
-            observer.observe(document.body,{subtree:true,childList:true});
+            function init(){bind();hideLogin();}
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+            new MutationObserver(()=>{bind();hideLogin();}).observe(document.body,{subtree:true,childList:true});
             setInterval(bind,1000);
           })();
           </script>'''
-
-          if 'DH_HIDDEN_ADMIN_GATE_V3_DIRECT_LOGIN' not in s:
-              pos=s.rfind('</body>')
-              if pos < 0: raise SystemExit('Closing body tag not found')
-              s=s[:pos]+gate+'\n'+s[pos:]
+          s=s.replace('</body>',gate+'\n</body>',1)
 
           p.write_text(s,encoding='utf-8')
           PY
 
-          grep -q 'DH_HIDDEN_ADMIN_GATE_V3_DIRECT_LOGIN' index.html
+          # Hard assertions: no PIN UI, no PIN gate, one clean email/password login, final 8-double gate.
           ! grep -q 'id="pinPage"' index.html
           ! grep -q 'id="adminPin"' index.html
+          ! grep -q 'id="adminLoginPin"' index.html
           ! grep -q 'verify-admin-gate' index.html
+          ! grep -q 'verify-admin-pin' index.html
+          ! grep -q 'DH_SUPABASE_ADMIN_AUTH_V1' index.html
+          ! grep -q 'DH_HIDDEN_ADMIN_GATE_V2' index.html
+          ! grep -q 'DH_HIDDEN_ADMIN_GATE_V3' index.html
+          grep -q 'DH_HIDDEN_ADMIN_GATE_FINAL' index.html
+          grep -q 'REQUIRED_DOUBLES = 8' index.html
           grep -q 'id="loginPage"' index.html
           grep -q 'id="adminUser"' index.html
           grep -q 'id="adminPass"' index.html
-          grep -q 'REQUIRED_DOUBLES = 8' index.html
+          grep -q 'signInWithPassword' index.html
+          grep -q 'bootstrap-admin' index.html
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -124,6 +167,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Open admin Login directly after 8 double-touch gate'
+            git commit -m 'Finalize admin access without PIN'
             git push
           fi
