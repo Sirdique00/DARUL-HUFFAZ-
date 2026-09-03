@@ -16,24 +16,24 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           marker='/* DH_SUPABASE_ADMIN_AUTH_V1 */'
-          idx=s.find(marker)
-          if idx>=0:
-              start=s.rfind('<script',0,idx)
-              tag_end=s.find('>',start)
-              close=s.find('</script>',idx)
-              if start>=0 and tag_end>=0 and close>=0 and 'src=' in s[start:tag_end+1]:
-                  s=s[:start]+s[start:tag_end+1]+s[close+9:]
-          if marker in s:
-              raise SystemExit('marker still present before repair')
+          bad_open='<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">'
+          if marker in s and bad_open in s:
+              a=s.find(bad_open)
+              b=s.find('    <!-- Supabase JS Client -->',a)
+              if a>=0 and b>=0 and marker in s[a:b]:
+                  s=s[:a]+bad_open+'</script>\n'+s[b:]
+          s=re.sub(r'\/\* DH_SUPABASE_ADMIN_AUTH_V1 \*\/.*?(?=<\/script>)','',s,count=1,flags=re.S)
           inject=r'''/* DH_SUPABASE_ADMIN_AUTH_V1 */
           (()=>{
               const login=$('loginPage');
               if(!login)return;
               const pass=$('adminPass');
               if(!pass)return;
+              if($('adminLoginPin'))return;
               const pinWrap=document.createElement('div');
               pinWrap.className='form-group';
               pinWrap.innerHTML='<label>Admin PIN *</label><input type="password" id="adminLoginPin" inputmode="numeric" maxlength="8" placeholder="4–8 digit PIN" autocomplete="off">';
@@ -94,8 +94,9 @@ jobs:
           Path('/tmp/darul-huffaz-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
           PY
           node --check /tmp/darul-huffaz-inline.js
-          grep -q "DH_SUPABASE_ADMIN_AUTH_V1" index.html
+          test "$(grep -o "DH_SUPABASE_ADMIN_AUTH_V1" index.html | wc -l)" -eq 1
           grep -q "verify-admin-pin" index.html
+          grep -q "bootstrap-admin" index.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
