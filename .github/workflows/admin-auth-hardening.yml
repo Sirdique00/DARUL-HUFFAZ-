@@ -38,18 +38,6 @@ jobs:
               const oldBtn=$('verifyLoginBtn');
               const btn=oldBtn.cloneNode(true);
               oldBtn.replaceWith(btn);
-              async function verifyPin(){
-                  const pin=$('adminLoginPin').value.trim();
-                  if(!/^\d{4,8}$/.test(pin))throw new Error('PIN dole ya zama lambobi 4 zuwa 8.');
-                  const r=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
-                  if(r.error)throw r.error;
-                  if(!r.data?.success)throw new Error(r.data?.error||'INVALID_PIN');
-              }
-              async function bootstrap(email,password,pin){
-                  const r=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
-                  if(r.error)throw r.error;
-                  if(!r.data?.success)throw new Error(r.data?.error||'BOOTSTRAP_FAILED');
-              }
               btn.addEventListener('click',async()=>{
                   const email=$('adminUser').value.trim().toLowerCase();
                   const password=$('adminPass').value;
@@ -58,24 +46,17 @@ jobs:
                   if(!/^\d{4,8}$/.test(pin))return alert('PIN dole ya zama lambobi 4 zuwa 8.');
                   btn.disabled=true;btn.innerText='Ana tabbatarwa...';
                   try{
-                      let signedIn=false;
                       let {error}=await supabaseClient.auth.signInWithPassword({email,password});
-                      if(!error){
-                          signedIn=true;
-                      }else{
+                      if(error){
                           const sign=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:email.split('@')[0]}}});
                           if(sign.error)throw error;
                           if(!sign.data.session){
                               alert('An kirkiri account. Duba email dinka ka tabbatar, sannan ka dawo ka Login da wannan Username, Password da PIN.');
                               return;
                           }
-                          signedIn=true;
                       }
-                      if(!signedIn)throw new Error('LOGIN_FAILED');
-                      let pinOk=true;
                       const vp=await supabaseClient.functions.invoke('verify-admin-pin',{body:{pin}});
-                      if(vp.error||!vp.data?.success)pinOk=false;
-                      if(!pinOk){
+                      if(vp.error||!vp.data?.success){
                           const b=await supabaseClient.functions.invoke('bootstrap-admin',{body:{fullName:email.split('@')[0],username:email,pin}});
                           if(b.error||!b.data?.success)throw new Error('PIN din ba daidai ba ko wannan account ba Admin bane.');
                       }
@@ -98,7 +79,8 @@ jobs:
           '''
           close='</script>'
           if close not in s: raise SystemExit('Closing script tag missing')
-          s=s.replace(close,inject+'\n'+close,1)
+          head,tail=s.rsplit(close,1)
+          s=head+inject+'\n'+close+tail
           p.write_text(s,encoding='utf-8')
           PY
           grep -q "DH_SUPABASE_ADMIN_AUTH_V1" index.html
