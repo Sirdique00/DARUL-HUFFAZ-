@@ -1,0 +1,31 @@
+name: Install code generator V3
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          tag='<script src="code-generator.js"></script>'
+          if tag not in s:
+              s=s.replace('</body>', tag+'\n</body>', 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+          grep -q 'code-generator.js' index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Wire Supabase code generator V3 into dashboard'
+            git push
+          fi
